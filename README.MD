@@ -1,6 +1,6 @@
-### Hyde bot for discord
+# Hyde bot for discord
 
-# Technological stack
+### Technological stack
 
 - Discordgo
 - Golang
