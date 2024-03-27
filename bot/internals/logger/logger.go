@@ -1,12 +1,13 @@
 package logger
 
 import (
+	"io"
 	"os"
+
 	"github.com/sirupsen/logrus"
 )
 
 var Logger *logrus.Logger
-
 
 func Init(output *os.File) *logrus.Logger {
 	var level logrus.Level
@@ -17,7 +18,7 @@ func Init(output *os.File) *logrus.Logger {
 	}
 
 	Logger = &logrus.Logger{
-		Out: output,
+		Out:   io.MultiWriter(output, os.Stdout),
 		Level: level,
 		Formatter: &logrus.TextFormatter{
 			TimestampFormat: "2006-01-02 15:04:05",
@@ -47,3 +48,4 @@ func Info(message string) {
 func Debug(message string) {
 	Logger.Debug(message)
 }
+

@@ -8,15 +8,12 @@ import (
 
 var prohibitedEmojies = []string{"🔥"}
 
-
 func HandleDeleteReaction(s *discordgo.Session, event interface{}) {
-  typedEvent := event.(discordgo.MessageReactionAdd)
+	typedEvent := event.(*discordgo.MessageReactionAdd)
 
+	contains := slices.Contains(prohibitedEmojies, typedEvent.Emoji.Name)
 
-  contains := slices.Contains(prohibitedEmojies, typedEvent.Emoji.Name)
-
-
-  if contains {
-    s.MessageReactionRemove(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.ID, typedEvent.UserID)
-  } 
+	if contains {
+		s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.Name)
+	}
 }

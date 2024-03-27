@@ -17,8 +17,8 @@ var s *discordgo.Session
 var err error
 var fs *os.File
 
-var ( 
-	RemoveCommands = flag.Bool("rmcmd", false, "Remove all commands on shutdown")
+var (
+	RemoveCommands   = flag.Bool("rmcmd", false, "Remove all commands on shutdown")
 	RegisterCommands = flag.Bool("regcmd", true, "Register all commands on startup")
 )
 
@@ -31,7 +31,6 @@ func init() {
 		os.Exit(1)
 	}
 
-
 	s, err = discordgo.New("Bot " + os.Getenv("TOKEN"))
 
 	if err != nil {
@@ -40,22 +39,16 @@ func init() {
 	}
 }
 
-
 func main() {
-    evtManager := events.NewEventManager()
+	evtManager := events.NewEventManager()
 
-    evtManager.RegisterEventHandler(
-      "MessageReactionAdd", 
-      func (s *discordgo.Session, event discordgo.MessageReactionAdd)  {
-        events.HandleDeleteReaction(s, event)
-      },
-      "",
-    )
+	evtManager.RegisterEventHandler("MessageReactionAdd", func(s *discordgo.Session, event interface{}) {
+		events.HandleDeleteReaction(s, event)
+	}, "")
 
-
-    s.AddHandler(func (s *discordgo.Session, event interface{})  {
-      evtManager.HandleEvent(s, event)
-    })
+	s.AddHandler(func(s *discordgo.Session, event interface{}) {
+		evtManager.HandleEvent(s, event)
+	})
 
 	cmdManager := commands.NewCommandManager()
 
@@ -67,7 +60,7 @@ func main() {
 		commands.DeleteCommandHandler(s, i, cmdManager)
 	})
 
-	s.AddHandler(func (s *discordgo.Session, i* discordgo.InteractionCreate) {
+	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			for _, command := range cmdManager.Commands {
 				if command.ApplicationCommand.Name == i.ApplicationCommandData().Name {
@@ -78,7 +71,7 @@ func main() {
 		}
 	})
 
-	fs, err = os.OpenFile("log/logs.log" , os.O_APPEND | os.O_CREATE | os.O_RDWR, 0644)
+	fs, err = os.OpenFile("log/logs.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 
 	if err != nil {
 		fmt.Println("Error creating a new log file: ", err)
@@ -92,7 +85,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	s.AddHandler(func (s *discordgo.Session, m *discordgo.Ready)  {
+	s.AddHandler(func(s *discordgo.Session, m *discordgo.Ready) {
 		log.Info("Bot is up and running!")
 	})
 
@@ -128,7 +121,7 @@ func main() {
 		log.Info("Removing commands")
 
 		for _, command := range cmdManager.RegisteredCommands {
-			if (command == nil) {
+			if command == nil {
 				continue
 			}
 
