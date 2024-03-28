@@ -11,3 +11,5 @@
   - [] Moderation to delete reactions with certain emojis ~1d #feat @papicBorovoi 2024-03-14
 
 ### Done
+
+- [X] Events #feat @papicBorovoi 2024-03-27
