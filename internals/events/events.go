@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"os"
 )
 
 type EventHandler func(s *discordgo.Session, event interface{})
@@ -20,6 +21,17 @@ func NewEventManager() *EventManager {
 	return &EventManager{
 		Events: make(map[string][]*Event),
 	}
+}
+
+func (em *EventManager) RegisterDefaultEvents() {
+	var guildID string
+
+	if os.Getenv("ENV") == "development" {
+		guildID = os.Getenv("DEV_GUILD_ID")
+	}
+
+	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction, guildID)
+	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate, guildID)
 }
 
 // RegisterEventHandler registers an event handler for a specific guild.
@@ -68,6 +80,8 @@ func (em *EventManager) HandleEvent(s *discordgo.Session, event interface{}) {
 // getEventType returns the type of the event based on its underlying struct.
 func getEventType(event interface{}) string {
 	switch event.(type) {
+	case *discordgo.InteractionCreate:
+		return "InteractionCreate"
 	case *discordgo.MessageCreate:
 		return "MessageCreate"
 	case *discordgo.MessageUpdate:
@@ -86,6 +100,8 @@ func getEventType(event interface{}) string {
 // getGuildID returns the guild ID associated with the event, if applicable.
 func getGuildID(event interface{}) string {
 	switch e := event.(type) {
+	case *discordgo.InteractionCreate:
+		return e.Interaction.GuildID
 	case *discordgo.MessageCreate:
 		return e.GuildID
 	case *discordgo.MessageUpdate:
