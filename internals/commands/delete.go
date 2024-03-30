@@ -32,24 +32,28 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	// find the command to delete
 	cm := NewCommandManager()
 
-	for _, command := range cm.Commands {
-		if command.RegisteredCommand.Name == commandName && command.RegisteredCommand.GuildID == i.Interaction.GuildID {
-			err := cm.DeleteCommand(s, command.RegisteredCommand, i.Interaction.GuildID)
-			if err != nil {
-				logger.Error(err, helpers.FillFields(i))
-				content = "Error deleting the command"
-				break
-			}
+	command := cm.Commands[commandName]
 
-			command.IsRegistered = false
-			logger.Info("Command deleted", helpers.FillFields(i))
-			content = "Command deleted"
-			break
-		}
+	if command == nil {
+		content = "Command not found"
+	}
+
+	c := command[i.Interaction.GuildID]
+
+	if c == nil {
+		content = "Command not found"
 	}
 
 	if content == "" {
-		content = "Command not found"
+		err := cm.DeleteCommand(s, c.RegisteredCommand, i.Interaction.GuildID)
+
+		if err != nil {
+			logger.Error(err, helpers.FillFields(i))
+			content = "Error deleting the command"
+		}
+
+		logger.Info("Command deleted", helpers.FillFields(i))
+		content = "Command deleted"
 	}
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

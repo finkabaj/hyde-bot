@@ -23,10 +23,11 @@ func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	cmdManager := NewCommandManager()
 
 	for _, command := range cmdManager.Commands {
-		if command.GuildID != "" && command.GuildID != i.Interaction.GuildID || !command.IsRegistered {
-			continue
+		if command[i.Interaction.GuildID] != nil && command[i.Interaction.GuildID].IsRegistered {
+			commands += "/" + command[i.Interaction.GuildID].ApplicationCommand.Name + "\n"
+		} else if command[""] != nil && command[""].IsRegistered {
+			commands += "/" + command[""].ApplicationCommand.Name + "\n"
 		}
-		commands += "/" + command.RegisteredCommand.Name + " - " + command.RegisteredCommand.Description + "\n"
 	}
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

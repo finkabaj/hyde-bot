@@ -12,7 +12,9 @@ var Logger *logrus.Logger
 func Init(output *os.File) *logrus.Logger {
 	var target io.Writer
 	var level logrus.Level
-	if os.Getenv("ENV") == "development" {
+	env := os.Getenv("ENV")
+
+	if env == "development" {
 		level = logrus.DebugLevel
 		target = io.MultiWriter(output, os.Stdout)
 	} else {
@@ -24,10 +26,11 @@ func Init(output *os.File) *logrus.Logger {
 		Out:   target,
 		Level: level,
 		Formatter: &logrus.TextFormatter{
+			ForceColors:     true,
+			FullTimestamp:   true,
 			TimestampFormat: "2006-01-02 15:04:05",
 		},
 	}
-	Logger.SetReportCaller(true)
 
 	return Logger
 }

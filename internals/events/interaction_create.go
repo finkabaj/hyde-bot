@@ -3,6 +3,8 @@ package events
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/commands"
+	"github.com/finkabaj/hyde-bot/internals/helpers"
+	"github.com/finkabaj/hyde-bot/internals/logger"
 )
 
 func HandleInteractionCreate(s *discordgo.Session, event interface{}) {
@@ -11,12 +13,23 @@ func HandleInteractionCreate(s *discordgo.Session, event interface{}) {
 	cm := commands.NewCommandManager()
 
 	if i.Type == discordgo.InteractionApplicationCommand {
-		for _, command := range cm.Commands {
-			if command.RegisteredCommand.Name == i.ApplicationCommandData().Name &&
-				command.GuildID == i.Interaction.GuildID || command.GuildID == "" {
-				command.Handler(s, i)
-				break
+		cmd := cm.Commands[i.ApplicationCommandData().Name][i.Interaction.GuildID]
+
+		if cmd == nil {
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Command is not registered",
+					Flags:   1 << 6,
+				},
+			})
+
+			if err != nil {
+				logger.Error(err, helpers.FillFields(i))
 			}
 		}
+
+		cmd.Handler(s, i)
+		logger.Info("Command executed", helpers.FillFields(i))
 	}
 }
