@@ -100,7 +100,7 @@ func main() {
 
 		for _, c := range cmdManager.Commands {
 			for _, command := range c {
-				if command == nil {
+				if command.RegisteredCommand == nil {
 					continue
 				}
 
@@ -109,7 +109,7 @@ func main() {
 				if err != nil {
 					logger.Error(err, logrus.Fields{"message": "Error removing command"})
 				}
-				logger.Info("Removed command: " + command.RegisteredCommand.Name)
+				logger.Info("Removed command: " + command.ApplicationCommand.Name)
 			}
 		}
 	}

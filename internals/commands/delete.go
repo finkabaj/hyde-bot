@@ -40,7 +40,7 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 
 	c := command[i.Interaction.GuildID]
 
-	if c == nil {
+	if c == nil || !c.IsRegistered {
 		c = command[""]
 
 		if c == nil {
