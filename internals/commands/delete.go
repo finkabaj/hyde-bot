@@ -41,7 +41,13 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	c := command[i.Interaction.GuildID]
 
 	if c == nil {
-		content = "Command not found"
+		c = command[""]
+
+		if c == nil {
+			content = "Command not found"
+		} else {
+			content = "You can't delete default commands"
+		}
 	}
 
 	if content == "" {

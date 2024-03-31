@@ -12,24 +12,27 @@ var Logger *logrus.Logger
 func Init(output *os.File) *logrus.Logger {
 	var target io.Writer
 	var level logrus.Level
+	var format logrus.Formatter
 	env := os.Getenv("ENV")
 
 	if env == "development" {
 		level = logrus.DebugLevel
 		target = io.MultiWriter(output, os.Stdout)
-	} else {
-		level = logrus.InfoLevel
-		target = output
-	}
-
-	Logger = &logrus.Logger{
-		Out:   target,
-		Level: level,
-		Formatter: &logrus.TextFormatter{
+		format = &logrus.TextFormatter{
 			ForceColors:     true,
 			FullTimestamp:   true,
 			TimestampFormat: "2006-01-02 15:04:05",
-		},
+		}
+	} else {
+		level = logrus.InfoLevel
+		target = output
+		format = &logrus.JSONFormatter{}
+	}
+
+	Logger = &logrus.Logger{
+		Out:       target,
+		Level:     level,
+		Formatter: format,
 	}
 
 	return Logger

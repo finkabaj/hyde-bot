@@ -1,8 +1,9 @@
 package events
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"os"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type EventHandler func(s *discordgo.Session, event interface{})
@@ -14,17 +15,17 @@ type Event struct {
 }
 
 type EventManager struct {
-	Events map[string][]*Event
+	Events map[string]map[string]*Event // Events[type][guildID] = event
 }
 
 func NewEventManager() *EventManager {
 	return &EventManager{
-		Events: make(map[string][]*Event),
+		Events: make(map[string]map[string]*Event),
 	}
 }
 
 func (em *EventManager) RegisterDefaultEvents() {
-	var guildID string
+	var guildID string = ""
 
 	if os.Getenv("ENV") == "development" {
 		guildID = os.Getenv("DEV_GUILD_ID")
@@ -42,17 +43,21 @@ func (em *EventManager) RegisterEventHandler(eventType string, handler EventHand
 		Handler: handler,
 		GuildID: guildID,
 	}
-	em.Events[eventType] = append(em.Events[eventType], event)
+
+	if _, ok := em.Events[eventType]; !ok {
+		em.Events[eventType] = make(map[string]*Event)
+	}
+
+	em.Events[eventType][guildID] = event
 }
 
 // RemoveEventHandler removes an event handler for a specific guild.
 // If guildID is empty, it will remove the global event handler.
 func (em *EventManager) RemoveEventHandler(eventType string, handler EventHandler, guildID string) {
-	events := em.Events[eventType]
-	for i, e := range events {
-		if e.Type == eventType && e.GuildID == guildID {
-			em.Events[eventType] = append(events[:i], events[i+1:]...)
-			break
+	if _, ok := em.Events[eventType]; ok {
+		delete(em.Events[eventType], guildID)
+		if len(em.Events[eventType]) == 0 {
+			delete(em.Events, eventType)
 		}
 	}
 }
@@ -62,17 +67,11 @@ func (em *EventManager) HandleEvent(s *discordgo.Session, event interface{}) {
 	eventType := getEventType(event)
 	guildID := getGuildID(event)
 
-	// Call global event handlers
-	for _, e := range em.Events[eventType] {
-		if e.GuildID == "" {
-			e.Handler(s, event)
-		}
-	}
-
-	// Call guild-specific event handlers
-	for _, e := range em.Events[eventType] {
-		if e.GuildID == guildID {
-			e.Handler(s, event)
+	if eventHandlers, ok := em.Events[eventType]; ok {
+		if eventHandler, ok := eventHandlers[guildID]; ok {
+			eventHandler.Handler(s, event)
+		} else if globalEventHandler, ok := eventHandlers[""]; ok {
+			globalEventHandler.Handler(s, event)
 		}
 	}
 }

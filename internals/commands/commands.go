@@ -2,7 +2,6 @@ package commands
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
@@ -27,14 +26,14 @@ var cmdManagerInstance *CommandManager
 func NewCommandManager() *CommandManager {
 	if cmdManagerInstance == nil {
 		cmdManagerInstance = &CommandManager{
-			Commands: make(map[string]map[string]*Command, 0),
+			Commands: make(map[string]map[string]*Command),
 		}
 	}
 	return cmdManagerInstance
 }
 
 func (cm *CommandManager) RegisterDefaultCommandsToManager() {
-	var guildID string
+	var guildID string = ""
 
 	if os.Getenv("ENV") == "development" {
 		guildID = os.Getenv("DEV_GUILD_ID")
@@ -57,7 +56,7 @@ func (cm *CommandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCom
 	}
 
 	if cm.Commands[cmd.Name] == nil {
-		cm.Commands[cmd.Name] = make(map[string]*Command, 1)
+		cm.Commands[cmd.Name] = make(map[string]*Command)
 	}
 
 	cm.Commands[cmd.Name][guildID] = command
@@ -104,8 +103,6 @@ func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo
 	}
 
 	c := cm.Commands[command.Name][guildID]
-
-	fmt.Println(c)
 
 	if c == nil {
 		err = errors.New("Command not found")
