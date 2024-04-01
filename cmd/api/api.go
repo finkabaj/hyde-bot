@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
+	"github.com/finkabaj/hyde-bot/internals/backend/controllers"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -28,7 +30,18 @@ func main() {
 	logger.Init(fs)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
 
-	r.Group()
+	if os.Getenv("ENV") == "development" {
+		r.Use(middleware.Logger)
+	} else if os.Getenv("ENV") == "production" {
+		r.Use(middleware.Recoverer)
+	}
+
+	controller := controllers.NewCommandsController()
+	controller.RegisterRoutes(r)
+
+	host := os.Getenv("API_HOST")
+	port := os.Getenv("API_PORT")
+
+	http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), r)
 }

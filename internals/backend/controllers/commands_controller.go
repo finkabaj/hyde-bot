@@ -19,4 +19,9 @@ func NewCommandsController() *CommandsController {
 }
 
 func (c *CommandsController) RegisterRoutes(router *chi.Mux) {
+	router.Get("/", handleGetRoot)
+}
+
+func handleGetRoot(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello world"))
 }
