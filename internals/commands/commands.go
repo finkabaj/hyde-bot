@@ -41,6 +41,7 @@ func (cm *CommandManager) RegisterDefaultCommandsToManager() {
 	cm.RegisterCommandToManager(HelpCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		HelpCommandHandler(s, i)
 	}, guildID)
+
 	cm.RegisterCommandToManager(DeleteCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		DeleteCommandHandler(s, i)
 	}, guildID)
@@ -62,27 +63,28 @@ func (cm *CommandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCom
 }
 
 // RegisterDefaultCommands registers all commands in the CommandManager.
-func (cm *CommandManager) RegisterDefaultCommands(s *discordgo.Session) error {
+func (cm *CommandManager) RegisterDefaultCommands(s *discordgo.Session) (err error) {
 
 	for _, cmd := range cm.Commands {
 		for _, c := range cmd {
-			registeredCmd, err := s.ApplicationCommandCreate(s.State.User.ID, c.GuildID, c.ApplicationCommand)
-			if err != nil {
-				return err
-			}
-			c.IsRegistered = true
+			c.RegisteredCommand, err = s.ApplicationCommandCreate(s.State.User.ID, c.GuildID, c.ApplicationCommand)
 
-			c.RegisteredCommand = registeredCmd
+			if err != nil {
+				return
+			}
+
+			c.IsRegistered = true
 		}
 	}
-	return nil
+	return
 }
 
 // RegisterCommand registers a command on a specific guild by its ID. If guildID is empty, it will register the command globally.
-func (cm *CommandManager) RegisterCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) error {
+func (cm *CommandManager) RegisterCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) (err error) {
 	cmd, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, command)
+
 	if err != nil {
-		return err
+		return
 	}
 
 	c := cm.Commands[cmd.Name][guildID]
@@ -90,15 +92,15 @@ func (cm *CommandManager) RegisterCommand(s *discordgo.Session, command *discord
 	c.IsRegistered = true
 	c.RegisteredCommand = cmd
 
-	return nil
+	return
 }
 
 // DeleteCommand deletes a command on a specific guild by its ID. If guildID is empty, it will delete the command globally.
-func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) error {
-	err := s.ApplicationCommandDelete(s.State.User.ID, guildID, command.ID)
+func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) (err error) {
+	err = s.ApplicationCommandDelete(s.State.User.ID, guildID, command.ID)
 
 	if err != nil {
-		return err
+		return
 	}
 
 	c := cm.Commands[command.Name][guildID]
@@ -106,11 +108,11 @@ func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo
 	if c == nil {
 		err = errors.New("Command not found")
 		logger.Warn(err, logger.LogFields{"command": command.Name, "guildID": guildID})
-		return err
+		return
 	}
 
 	c.IsRegistered = false
 	c.RegisteredCommand = nil
 
-	return nil
+	return
 }
