@@ -6,7 +6,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
-	"github.com/sirupsen/logrus"
 )
 
 type Command struct {
@@ -106,7 +105,7 @@ func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo
 
 	if c == nil {
 		err = errors.New("Command not found")
-		logger.Warn(err, logrus.Fields{"command": command.Name, "guildID": guildID})
+		logger.Warn(err, logger.LogFields{"command": command.Name, "guildID": guildID})
 		return err
 	}
 

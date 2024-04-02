@@ -1,17 +1,18 @@
 package controllers
 
 import (
+	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
 type CommandsController struct {
+	DB *db.Database
 }
 
 var commandsController *CommandsController
 
-// NewCommandsController is a function that returns a new commands controller or existing commands controller
-func NewCommandsController() *CommandsController {
+func NewCommandsController(db *db.Database) *CommandsController {
 	if commandsController == nil {
 		commandsController = &CommandsController{}
 	}

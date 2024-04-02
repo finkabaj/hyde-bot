@@ -11,7 +11,6 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/events"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
 )
 
 var s *discordgo.Session
@@ -63,7 +62,7 @@ func main() {
 	logger.Init(fs)
 
 	if err != nil {
-		logger.Fatal(err, logrus.Fields{"message": "Error creating a new log file"})
+		logger.Fatal(err, logger.LogFields{"message": "Error creating a new log file"})
 	}
 
 	s.AddHandler(func(s *discordgo.Session, m *discordgo.Ready) {
@@ -73,14 +72,14 @@ func main() {
 	err = s.Open()
 
 	if err != nil {
-		logger.Fatal(err, logrus.Fields{"message": "Error opening a connection to Discord"})
+		logger.Fatal(err, logger.LogFields{"message": "Error opening a connection to Discord"})
 	}
 
 	if *RegisterCommands {
 		err = cmdManager.RegisterDefaultCommands(s)
 
 		if err != nil {
-			logger.Fatal(err, logrus.Fields{"message": "Error registering commands"})
+			logger.Fatal(err, logger.LogFields{"message": "Error registering commands"})
 		}
 
 		logger.Info("Commands registered")
@@ -107,7 +106,7 @@ func main() {
 				err = cmdManager.DeleteCommand(s, command.RegisteredCommand, command.GuildID)
 
 				if err != nil {
-					logger.Error(err, logrus.Fields{"message": "Error removing command"})
+					logger.Error(err, logger.LogFields{"message": "Error removing command"})
 				}
 				logger.Info("Removed command: " + command.ApplicationCommand.Name)
 			}

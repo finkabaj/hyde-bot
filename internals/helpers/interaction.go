@@ -5,7 +5,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
-	"github.com/sirupsen/logrus"
 )
 
 func DefaultErrorResponse(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
@@ -28,15 +27,15 @@ func DefaultErrorResponse(s *discordgo.Session, i *discordgo.InteractionCreate, 
 	}
 }
 
-func FillFields(i *discordgo.InteractionCreate) logrus.Fields {
+func FillFields(i *discordgo.InteractionCreate) logger.LogFields {
 	if i.Type == discordgo.InteractionApplicationCommand {
-		optionFields := make(logrus.Fields)
+		optionFields := make(logger.LogFields)
 
 		for _, option := range i.ApplicationCommandData().Options {
 			optionFields[option.Name] = option.Value
 		}
 
-		return logrus.Fields{
+		return logger.LogFields{
 			"InteractionType":    i.Type,
 			"InteractionName":    i.ApplicationCommandData().Name,
 			"InteractionOptions": optionFields,
@@ -44,7 +43,7 @@ func FillFields(i *discordgo.InteractionCreate) logrus.Fields {
 		}
 	}
 
-	return logrus.Fields{
+	return logger.LogFields{
 		"InteractionType":    i.Type,
 		"InteractionMessage": i.Message.Content,
 	}

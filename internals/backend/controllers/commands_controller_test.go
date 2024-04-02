@@ -10,7 +10,7 @@ import (
 
 func TestCommandsControllerRoutes(t *testing.T) {
 	r := chi.NewRouter()
-	controller := NewCommandsController()
+	controller := CommandsController{}
 	controller.RegisterRoutes(r)
 
 	req := httptest.NewRequest("GET", "/", nil)

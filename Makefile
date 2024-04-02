@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := run_bot
+.DEFAULT_GOAL := run_bot_rmcmd
 
 fmt_bot:
 		go fmt cmd/hyde-bot/hyde_bot.go
@@ -8,6 +8,8 @@ clean:
 		rm -rf dist/
 build_bot: clean vet_bot
 		go build -o dist/ -v cmd/hyde-bot/hyde_bot.go
+run_bot_rmcmd: vet_bot
+		go run cmd/hyde-bot/hyde_bot.go --rmcmd true $(ARGS)
 run_bot: vet_bot
 		go run cmd/hyde-bot/hyde_bot.go $(ARGS)
 

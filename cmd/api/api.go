@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/finkabaj/hyde-bot/internals/backend/controllers"
+	"github.com/finkabaj/hyde-bot/internals/db"
+	"github.com/finkabaj/hyde-bot/internals/db/postgresql"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -37,7 +39,27 @@ func main() {
 		r.Use(middleware.Recoverer)
 	}
 
-	controller := controllers.NewCommandsController()
+	var database db.Database = &postgresql.Postgresql{}
+
+	credentials := db.DatabaseCredentials{
+		Host:     os.Getenv("POSTGRES_HOST"),
+		Port:     os.Getenv("POSTGRES_PORT"),
+		User:     os.Getenv("POSTGRES_USER"),
+		Password: os.Getenv("POSTGRES_PASSWORD"),
+		Database: os.Getenv("POSTGRES_DB"),
+	}
+
+	if err = database.Connect(&credentials); err != nil {
+		logger.Fatal(err)
+	}
+
+	if err = database.Status(); err != nil {
+		logger.Fatal(err)
+	}
+
+	defer database.Close()
+
+	controller := controllers.NewCommandsController(&database)
 	controller.RegisterRoutes(r)
 
 	host := os.Getenv("API_HOST")
