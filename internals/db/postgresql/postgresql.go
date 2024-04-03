@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/finkabaj/hyde-bot/internals/db"
+	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -32,6 +33,46 @@ func (p *Postgresql) setup() (err error) {
 		}
 	}()
 
+	_, err = transaction.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS users (
+      user_id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL
+    )
+  `)
+
+	if err != nil {
+		logger.Debug("error creating users table")
+		return
+	}
+
+	_, err = transaction.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS guilds (
+      guild_id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL
+    )
+  `)
+
+	if err != nil {
+		logger.Debug("error creating guilds table")
+		return
+	}
+
+	_, err = transaction.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      user_id VARCHAR(255) PRIMARY KEY,
+      token TEXT NOT NULL,
+      expires DATE NOT NULL,
+      CONSTRAINT fk_user
+        FOREIGN KEY(user_id)
+          REFERENCES users(user_id) ON DELETE CASCADE
+    )
+  `)
+
+	if err != nil {
+		logger.Debug("error creating refresh_tokens table")
+		return
+	}
+
 	err = transaction.Commit(ctx)
 
 	return
@@ -40,6 +81,12 @@ func (p *Postgresql) setup() (err error) {
 func (p *Postgresql) Connect(credentials *db.DatabaseCredentials) (err error) {
 	connStr := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable", credentials.User, credentials.Password, credentials.Host, credentials.Port, credentials.Database)
 	p.Conn, err = pgx.Connect(context.Background(), connStr)
+
+	if err != nil {
+		return
+	}
+
+	err = p.setup()
 
 	return
 }
