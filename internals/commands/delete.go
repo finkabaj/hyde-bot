@@ -31,14 +31,13 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 
 	cm := NewCommandManager()
 
-	command := cm.Commands[commandName]
+	command, ok := cm.Commands[commandName]
 
-	if command == nil {
+	if !ok {
 		content = "Command not found"
 	}
 
 	var c *Command
-	var ok bool
 
 	if c, ok = command[i.Interaction.GuildID]; ok && !c.IsRegistered {
 		if c, ok = command[""]; ok {
