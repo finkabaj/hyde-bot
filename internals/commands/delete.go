@@ -29,7 +29,6 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	commandName := i.ApplicationCommandData().Options[0].StringValue()
 	content := ""
 
-	// find the command to delete
 	cm := NewCommandManager()
 
 	command := cm.Commands[commandName]
@@ -38,15 +37,14 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		content = "Command not found"
 	}
 
-	c := command[i.Interaction.GuildID]
+	var c *Command
+	var ok bool
 
-	if c == nil || !c.IsRegistered {
-		c = command[""]
-
-		if c == nil {
-			content = "Command not found"
-		} else {
+	if c, ok = command[i.Interaction.GuildID]; ok && !c.IsRegistered {
+		if c, ok = command[""]; ok {
 			content = "You can't delete default commands"
+		} else {
+			content = "Command not found"
 		}
 	}
 

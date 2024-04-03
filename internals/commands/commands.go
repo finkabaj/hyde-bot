@@ -55,8 +55,13 @@ func (cm *CommandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCom
 		GuildID:            guildID,
 	}
 
-	if cm.Commands[cmd.Name] == nil {
+	if _, ok := cm.Commands[cmd.Name]; !ok {
 		cm.Commands[cmd.Name] = make(map[string]*Command)
+	}
+
+	if _, ok := cm.Commands[cmd.Name][guildID]; ok {
+		logger.Warn(errors.New("Command already exists"), logger.LogFields{"command": cmd.Name, "guildID": guildID})
+		return
 	}
 
 	cm.Commands[cmd.Name][guildID] = command
@@ -87,7 +92,13 @@ func (cm *CommandManager) RegisterCommand(s *discordgo.Session, command *discord
 		return
 	}
 
-	c := cm.Commands[cmd.Name][guildID]
+	c, ok := cm.Commands[cmd.Name][guildID]
+
+	if !ok {
+		err = errors.New("Command not found")
+		logger.Warn(err, logger.LogFields{"command": cmd.Name, "guildID": guildID})
+		return
+	}
 
 	c.IsRegistered = true
 	c.RegisteredCommand = cmd
@@ -103,9 +114,9 @@ func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo
 		return
 	}
 
-	c := cm.Commands[command.Name][guildID]
+	c, ok := cm.Commands[command.Name][guildID]
 
-	if c == nil {
+	if !ok {
 		err = errors.New("Command not found")
 		logger.Warn(err, logger.LogFields{"command": command.Name, "guildID": guildID})
 		return

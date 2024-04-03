@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
@@ -27,15 +28,13 @@ func init() {
 	err = godotenv.Load()
 
 	if err != nil {
-		fmt.Println("Error loading .env file")
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	s, err = discordgo.New("Bot " + os.Getenv("TOKEN"))
 
 	if err != nil {
-		fmt.Println("Error creating a new Discord session: ", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
@@ -99,7 +98,7 @@ func main() {
 
 		for _, c := range cmdManager.Commands {
 			for _, command := range c {
-				if command.RegisteredCommand == nil {
+				if !command.IsRegistered {
 					continue
 				}
 

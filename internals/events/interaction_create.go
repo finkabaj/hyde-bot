@@ -13,13 +13,13 @@ func HandleInteractionCreate(s *discordgo.Session, event interface{}) {
 	cm := commands.NewCommandManager()
 
 	if i.Type == discordgo.InteractionApplicationCommand {
-		cmd := cm.Commands[i.ApplicationCommandData().Name][i.Interaction.GuildID]
+		cmd, ok := cm.Commands[i.ApplicationCommandData().Name][i.Interaction.GuildID]
 
-		if cmd == nil {
-			cmd = cm.Commands[i.ApplicationCommandData().Name][""]
+		if !ok {
+			cmd, ok = cm.Commands[i.ApplicationCommandData().Name][""]
 		}
 
-		if cmd == nil {
+		if !ok {
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
