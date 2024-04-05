@@ -59,8 +59,11 @@ func main() {
 
 	defer database.Close()
 
-	controller := controllers.NewCommandsController(&database)
-	controller.RegisterRoutes(r)
+	commandsController := controllers.NewCommandsController(&database)
+	commandsController.RegisterRoutes(r)
+
+	eventsController := controllers.NewEventsController(&database)
+	eventsController.RegisterRoutes(r)
 
 	host := os.Getenv("API_HOST")
 	port := os.Getenv("API_PORT")

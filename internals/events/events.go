@@ -33,6 +33,7 @@ func (em *EventManager) RegisterDefaultEvents() {
 
 	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction, guildID)
 	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate, guildID)
+	em.RegisterEventHandler("GuildCreate", HandleGuildCreate, "")
 }
 
 // RegisterEventHandler registers an event handler for a specific guild.
@@ -91,6 +92,8 @@ func getEventType(event interface{}) string {
 		return "MessageReactionAdd"
 	case *discordgo.MessageReactionRemove:
 		return "MessageReactionRemove"
+	case *discordgo.GuildCreate:
+		return "GuildCreate"
 	default:
 		return ""
 	}
@@ -111,6 +114,8 @@ func getGuildID(event interface{}) string {
 		return e.GuildID
 	case *discordgo.MessageReactionRemove:
 		return e.GuildID
+	case *discordgo.GuildCreate:
+		return e.ID
 	default:
 		return ""
 	}
