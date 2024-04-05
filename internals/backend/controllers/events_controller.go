@@ -6,6 +6,9 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/finkabaj/hyde-bot/internals/db"
+	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/utils/common"
+	"github.com/finkabaj/hyde-bot/internals/utils/guild"
 )
 
 type EventsController struct {
@@ -26,6 +29,21 @@ func (c *EventsController) RegisterRoutes(router *chi.Mux) {
 }
 
 func handleNewGuild(w http.ResponseWriter, r *http.Request) {
+	body := r.Body
+	defer body.Close()
+
+	var guild *guild.GuildCreate
+
+	if err := common.UnmarshalResponse(body, &guild); err != nil {
+		logger.Error(err, logger.LogFields{"mesage": "error while unmarshaling guild info"})
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("OK"))
+
+	if err := common.MarshalRequest(w, &guild); err != nil {
+		logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }

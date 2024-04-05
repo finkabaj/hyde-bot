@@ -3,8 +3,8 @@ package events
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/commands"
-	"github.com/finkabaj/hyde-bot/internals/helpers"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
 func HandleInteractionCreate(s *discordgo.Session, event interface{}) {
@@ -29,11 +29,11 @@ func HandleInteractionCreate(s *discordgo.Session, event interface{}) {
 			})
 
 			if err != nil {
-				logger.Error(err, helpers.FillFields(i))
+				logger.Error(err, commandUtils.FillFields(i))
 			}
 		}
 
 		cmd.Handler(s, i)
-		logger.Info("Command executed", helpers.FillFields(i))
+		logger.Info("Command executed", commandUtils.FillFields(i))
 	}
 }

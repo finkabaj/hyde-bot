@@ -2,8 +2,8 @@ package commands
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/finkabaj/hyde-bot/internals/helpers"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
 var dmHelpPermission = true
@@ -48,6 +48,6 @@ func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	)
 
 	if err != nil {
-		logger.Error(err, helpers.FillFields(i))
+		logger.Error(err, commandUtils.FillFields(i))
 	}
 }
