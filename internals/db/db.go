@@ -5,7 +5,7 @@ import (
 )
 
 type Database interface {
-	Connect(credentials *DatabaseCredentials) error
+	Connect(credentials DatabaseCredentials) error
 	Close()
 	Status() error
 

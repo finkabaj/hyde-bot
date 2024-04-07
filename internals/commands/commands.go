@@ -16,22 +16,22 @@ type Command struct {
 	RegisteredCommand  *discordgo.ApplicationCommand
 }
 
-type CommandManager struct {
+type commandManager struct {
 	Commands map[string]map[string]*Command // commands[name][guildID] = command
 }
 
-var cmdManagerInstance *CommandManager
+var cmdManagerInstance *commandManager
 
-func NewCommandManager() *CommandManager {
+func NewCommandManager() *commandManager {
 	if cmdManagerInstance == nil {
-		cmdManagerInstance = &CommandManager{
+		cmdManagerInstance = &commandManager{
 			Commands: make(map[string]map[string]*Command),
 		}
 	}
 	return cmdManagerInstance
 }
 
-func (cm *CommandManager) RegisterDefaultCommandsToManager() {
+func (cm *commandManager) RegisterDefaultCommandsToManager() {
 	var guildID string = ""
 
 	if os.Getenv("ENV") == "development" {
@@ -47,8 +47,8 @@ func (cm *CommandManager) RegisterDefaultCommandsToManager() {
 	}, guildID)
 }
 
-// RegisterCommandToManager registers a command in the CommandManager. If guildID is an empty string, the command will be registered globally.
-func (cm *CommandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCommand, handler func(s *discordgo.Session, i *discordgo.InteractionCreate), guildID string) {
+// RegisterCommandToManager registers a command in the commandManager. If guildID is an empty string, the command will be registered globally.
+func (cm *commandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCommand, handler func(s *discordgo.Session, i *discordgo.InteractionCreate), guildID string) {
 	command := &Command{
 		ApplicationCommand: cmd,
 		Handler:            handler,
@@ -67,8 +67,8 @@ func (cm *CommandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCom
 	cm.Commands[cmd.Name][guildID] = command
 }
 
-// RegisterDefaultCommands registers all commands in the CommandManager.
-func (cm *CommandManager) RegisterDefaultCommands(s *discordgo.Session) (err error) {
+// RegisterDefaultCommands registers all commands in the commandManager.
+func (cm *commandManager) RegisterDefaultCommands(s *discordgo.Session) (err error) {
 
 	for _, cmd := range cm.Commands {
 		for _, c := range cmd {
@@ -85,7 +85,7 @@ func (cm *CommandManager) RegisterDefaultCommands(s *discordgo.Session) (err err
 }
 
 // RegisterCommand registers a command on a specific guild by its ID. If guildID is empty, it will register the command globally.
-func (cm *CommandManager) RegisterCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) (err error) {
+func (cm *commandManager) RegisterCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) (err error) {
 	cmd, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, command)
 
 	if err != nil {
@@ -107,7 +107,7 @@ func (cm *CommandManager) RegisterCommand(s *discordgo.Session, command *discord
 }
 
 // DeleteCommand deletes a command on a specific guild by its ID. If guildID is empty, it will delete the command globally.
-func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) (err error) {
+func (cm *commandManager) DeleteCommand(s *discordgo.Session, command *discordgo.ApplicationCommand, guildID string) (err error) {
 	err = s.ApplicationCommandDelete(s.State.User.ID, guildID, command.ID)
 
 	if err != nil {

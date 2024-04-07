@@ -48,5 +48,5 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 
 	var result *guild.GuildCreate
 
-	common.UnmarshalResponse(body, &result)
+	common.UnmarshalBody(body, &result)
 }

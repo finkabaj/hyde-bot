@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/finkabaj/hyde-bot/internals/backend/controllers"
+	"github.com/finkabaj/hyde-bot/internals/backend/services"
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/db/postgresql"
 	"github.com/finkabaj/hyde-bot/internals/logger"
@@ -40,6 +41,7 @@ func main() {
 	}
 
 	var database db.Database = &postgresql.Postgresql{}
+	defer database.Close()
 
 	credentials := db.DatabaseCredentials{
 		Host:     os.Getenv("POSTGRES_HOST"),
@@ -49,7 +51,7 @@ func main() {
 		Database: os.Getenv("POSTGRES_DB"),
 	}
 
-	if err = database.Connect(&credentials); err != nil {
+	if err = database.Connect(credentials); err != nil {
 		logger.Fatal(err)
 	}
 
@@ -57,12 +59,11 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	defer database.Close()
-
 	commandsController := controllers.NewCommandsController(&database)
 	commandsController.RegisterRoutes(r)
 
-	eventsController := controllers.NewEventsController(&database)
+	eventService := services.NewEventsService(database)
+	eventsController := controllers.NewEventsController(eventService)
 	eventsController.RegisterRoutes(r)
 
 	host := os.Getenv("API_HOST")

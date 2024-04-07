@@ -14,17 +14,22 @@ type Event struct {
 	GuildID string
 }
 
-type EventManager struct {
+type eventManager struct {
 	Events map[string]map[string]*Event // Events[type][guildID] = event
 }
 
-func NewEventManager() *EventManager {
-	return &EventManager{
-		Events: make(map[string]map[string]*Event),
+var em *eventManager
+
+func NewEventManager() *eventManager {
+	if em == nil {
+		return &eventManager{
+			Events: make(map[string]map[string]*Event),
+		}
 	}
+	return em
 }
 
-func (em *EventManager) RegisterDefaultEvents() {
+func (em *eventManager) RegisterDefaultEvents() {
 	var guildID string = ""
 
 	if os.Getenv("ENV") == "development" {
@@ -38,7 +43,7 @@ func (em *EventManager) RegisterDefaultEvents() {
 
 // RegisterEventHandler registers an event handler for a specific guild.
 // If guildID is empty, the event handler will be registered globally.
-func (em *EventManager) RegisterEventHandler(eventType string, handler EventHandler, guildID string) {
+func (em *eventManager) RegisterEventHandler(eventType string, handler EventHandler, guildID string) {
 	event := &Event{
 		Type:    eventType,
 		Handler: handler,
@@ -54,7 +59,7 @@ func (em *EventManager) RegisterEventHandler(eventType string, handler EventHand
 
 // RemoveEventHandler removes an event handler for a specific guild.
 // If guildID is empty, it will remove the global event handler.
-func (em *EventManager) RemoveEventHandler(eventType string, handler EventHandler, guildID string) {
+func (em *eventManager) RemoveEventHandler(eventType string, handler EventHandler, guildID string) {
 	if _, ok := em.Events[eventType]; ok {
 		delete(em.Events[eventType], guildID)
 		if len(em.Events[eventType]) == 0 {
@@ -64,7 +69,7 @@ func (em *EventManager) RemoveEventHandler(eventType string, handler EventHandle
 }
 
 // HandleEvent handles an incoming event by calling the appropriate event handlers.
-func (em *EventManager) HandleEvent(s *discordgo.Session, event interface{}) {
+func (em *eventManager) HandleEvent(s *discordgo.Session, event interface{}) {
 	eventType := getEventType(event)
 	guildID := getGuildID(event)
 
