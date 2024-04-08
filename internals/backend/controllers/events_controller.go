@@ -1,12 +1,12 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/finkabaj/hyde-bot/internals/backend/middleware"
 	"github.com/finkabaj/hyde-bot/internals/backend/services"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/finkabaj/hyde-bot/internals/utils/common"
@@ -29,25 +29,36 @@ func NewEventsController(es *services.EventsService) *EventsController {
 }
 
 func (c *EventsController) RegisterRoutes(router *chi.Mux) {
-	router.Post("/guild", c.postGuild)
-	router.Get("/guild/{id}", c.getGuild)
+	router.Route("/guild", func(r chi.Router) {
+		r.With(middleware.ValidateJson[guild.GuildCreate]()).Post("/", c.postGuild)
+		r.Get("/{id}", c.getGuild)
+	})
 }
 
 func (ec *EventsController) postGuild(w http.ResponseWriter, r *http.Request) {
-	body := r.Body
-	defer body.Close()
+	g := r.Context().Value(middleware.ValidateJsonCtxKey).(guild.GuildCreate)
 
-	var guild *guild.GuildCreate
+	newGuild, err := ec.service.CreateGuild(&g)
 
-	if err := common.UnmarshalBody(body, &guild); err != nil {
-		logger.Error(err, logger.LogFields{"mesage": "error while unmarshaling guild info"})
-		w.WriteHeader(http.StatusInternalServerError)
+	if err == guild.ErrGuildConflict {
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusBadRequest).
+			SetMessage(fmt.Sprintf("Guild with id: %s already exists", g.GuildId)).
+			Send(w)
+		return
+	} else if err != nil {
+		logger.Error(err, logger.LogFields{"message": "error while creating new guild"})
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusInternalServerError).
+			Send(w)
 		return
 	}
 
-	if err := common.MarshalBody(w, http.StatusCreated, &guild); err != nil {
+	if err := common.MarshalBody(w, http.StatusCreated, &newGuild); err != nil {
 		logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
-		w.WriteHeader(http.StatusInternalServerError)
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusInternalServerError).
+			Send(w)
 	}
 }
 
@@ -56,7 +67,10 @@ func (ec *EventsController) getGuild(w http.ResponseWriter, r *http.Request) {
 
 	if gId == "" {
 		logger.Debug("Guild ID is empty")
-		common.WriteError(w, errors.New("Empty guild id"), http.StatusBadRequest, "Provice guild id to get guild info")
+		common.NewErrorResponseBuilder(guild.EmptyGuildId).
+			SetStatus(http.StatusBadRequest).
+			SetMessage("Provide a guild id").
+			Send(w)
 		return
 	}
 
@@ -64,17 +78,24 @@ func (ec *EventsController) getGuild(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		logger.Error(err)
-		common.WriteError(w, err, http.StatusInternalServerError)
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusInternalServerError).
+			Send(w)
 		return
 	}
 
 	if g == nil {
-		common.WriteError(w, errors.New("No guild found"), http.StatusBadRequest, fmt.Sprintf("No guild with id: %s found", gId))
+		common.NewErrorResponseBuilder(guild.ErrGuildNotFound).
+			SetStatus(http.StatusBadRequest).
+			SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
+			Send(w)
 		return
 	}
 
 	if err := common.MarshalBody(w, http.StatusOK, &g); err != nil {
 		logger.Error(err, logger.LogFields{"message": "Error while marshaling get guild"})
-		common.WriteError(w, err, http.StatusInternalServerError, "Error while marshaling")
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusInternalServerError).
+			Send(w)
 	}
 }

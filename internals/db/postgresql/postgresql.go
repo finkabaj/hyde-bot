@@ -104,8 +104,31 @@ func (p *Postgresql) Status() (err error) {
 	return
 }
 
-func (p *Postgresql) CreateGuild(guild *guild.GuildCreate) (*guild.Guild, error) {
-	return nil, nil
+func (p *Postgresql) CreateGuild(gc *guild.GuildCreate) (*guild.Guild, error) {
+	query := `
+    INSERT INTO guilds ("guildId", "ownerId") 
+    VALUES ($1, $2) 
+    RETURNING *
+  `
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	row, err := p.pool.Query(ctx, query, gc.GuildId, gc.OwnerId)
+	defer row.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	newGuild, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[guild.Guild])
+
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &newGuild, nil
 }
 
 func (p *Postgresql) GetGuild(guildId string) (*guild.Guild, error) {
@@ -124,7 +147,7 @@ func (p *Postgresql) GetGuild(guildId string) (*guild.Guild, error) {
 
 	foundGuild, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[guild.Guild])
 
-	if err != nil && err == pgx.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err

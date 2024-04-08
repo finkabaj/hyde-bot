@@ -20,12 +20,16 @@ func NewEventsService(d db.Database) *EventsService {
 	return es
 }
 
-func (e *EventsService) CreateGuild(guild *guild.GuildCreate) (*guild.Guild, error) {
-	if guild, err := e.database.GetGuild(guild.GuildId); guild != nil {
+func (e *EventsService) CreateGuild(g *guild.GuildCreate) (*guild.Guild, error) {
+	if g, err := e.GetGuild(g.GuildId); err != nil {
 		return nil, err
+	} else if g != nil {
+		return nil, guild.ErrGuildConflict
 	}
 
-	return nil, nil
+	newGuild, err := e.database.CreateGuild(g)
+
+	return newGuild, err
 }
 
 func (e *EventsService) GetGuild(gId string) (*guild.Guild, error) {
