@@ -1,4 +1,4 @@
-package helpers
+package commandUtils
 
 import (
 	"os"

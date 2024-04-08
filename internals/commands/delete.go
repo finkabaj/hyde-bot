@@ -2,8 +2,8 @@ package commands
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/finkabaj/hyde-bot/internals/helpers"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
 var dmDeletePermission = false
@@ -51,11 +51,11 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		err := cm.DeleteCommand(s, c.RegisteredCommand, i.Interaction.GuildID)
 
 		if err != nil {
-			logger.Error(err, helpers.FillFields(i))
+			logger.Error(err, commandUtils.FillFields(i))
 			content = "Error deleting the command"
 		}
 
-		logger.Info("Command deleted", helpers.FillFields(i))
+		logger.Info("Command deleted", commandUtils.FillFields(i))
 		content = "Command deleted"
 	}
 
@@ -69,6 +69,6 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	)
 
 	if err != nil {
-		logger.Error(err, helpers.FillFields(i))
+		logger.Error(err, commandUtils.FillFields(i))
 	}
 }

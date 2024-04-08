@@ -3,15 +3,18 @@ package postgresql
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/utils/guild"
+
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Postgresql struct {
-	db.Database
-	Conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 func (p *Postgresql) setup() (err error) {
@@ -21,7 +24,7 @@ func (p *Postgresql) setup() (err error) {
 
 	ctx := context.Background()
 
-	transaction, err := p.Conn.Begin(ctx)
+	transaction, err := p.pool.Begin(ctx)
 
 	if err != nil {
 		return
@@ -34,9 +37,9 @@ func (p *Postgresql) setup() (err error) {
 	}()
 
 	_, err = transaction.Exec(ctx, `
-    CREATE TABLE IF NOT EXISTS users (
-      user_id VARCHAR(255) PRIMARY KEY,
-      name VARCHAR(255) NOT NULL
+    CREATE TABLE IF NOT EXISTS "users" (
+      "userId" VARCHAR(255) PRIMARY KEY,
+      "name" VARCHAR(255) NOT NULL
     )
   `)
 
@@ -46,9 +49,9 @@ func (p *Postgresql) setup() (err error) {
 	}
 
 	_, err = transaction.Exec(ctx, `
-    CREATE TABLE IF NOT EXISTS guilds (
-      guild_id VARCHAR(255) PRIMARY KEY,
-      name VARCHAR(255) NOT NULL
+    CREATE TABLE IF NOT EXISTS "guilds" (
+      "guildId" VARCHAR(255) PRIMARY KEY,
+      "ownerId" VARCHAR(255) NOT NULL
     )
   `)
 
@@ -58,18 +61,18 @@ func (p *Postgresql) setup() (err error) {
 	}
 
 	_, err = transaction.Exec(ctx, `
-    CREATE TABLE IF NOT EXISTS refresh_tokens (
-      user_id VARCHAR(255) PRIMARY KEY,
-      token TEXT NOT NULL,
-      expires DATE NOT NULL,
-      CONSTRAINT fk_user
-        FOREIGN KEY(user_id)
-          REFERENCES users(user_id) ON DELETE CASCADE
+    CREATE TABLE IF NOT EXISTS "refreshTokens" (
+      "userId" VARCHAR(255) PRIMARY KEY,
+      "token" TEXT NOT NULL,
+      "expires" DATE NOT NULL,
+      CONSTRAINT "fkUser"
+        FOREIGN KEY("userId")
+          REFERENCES users("userId") ON DELETE CASCADE
     )
   `)
 
 	if err != nil {
-		logger.Debug("error creating refresh_tokens table")
+		logger.Debug("error creating refreshTokens table")
 		return
 	}
 
@@ -78,9 +81,9 @@ func (p *Postgresql) setup() (err error) {
 	return
 }
 
-func (p *Postgresql) Connect(credentials *db.DatabaseCredentials) (err error) {
+func (p *Postgresql) Connect(credentials db.DatabaseCredentials) (err error) {
 	connStr := fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable", credentials.User, credentials.Password, credentials.Host, credentials.Port, credentials.Database)
-	p.Conn, err = pgx.Connect(context.Background(), connStr)
+	p.pool, err = pgxpool.New(context.Background(), connStr)
 
 	if err != nil {
 		return
@@ -92,11 +95,63 @@ func (p *Postgresql) Connect(credentials *db.DatabaseCredentials) (err error) {
 }
 
 func (p *Postgresql) Close() {
-	p.Conn.Close(context.Background())
+	p.pool.Close()
 }
 
 func (p *Postgresql) Status() (err error) {
-	err = p.Conn.Ping(context.Background())
+	err = p.pool.Ping(context.Background())
 
 	return
+}
+
+func (p *Postgresql) CreateGuild(gc *guild.GuildCreate) (*guild.Guild, error) {
+	query := `
+    INSERT INTO guilds ("guildId", "ownerId") 
+    VALUES ($1, $2) 
+    RETURNING *
+  `
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	row, err := p.pool.Query(ctx, query, gc.GuildId, gc.OwnerId)
+	defer row.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	newGuild, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[guild.Guild])
+
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &newGuild, nil
+}
+
+func (p *Postgresql) GetGuild(guildId string) (*guild.Guild, error) {
+	query := `
+    SELECT * FROM guilds WHERE "guildId" = $1
+  `
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	row, err := p.pool.Query(ctx, query, guildId)
+	defer row.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	foundGuild, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[guild.Guild])
+
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &foundGuild, nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -54,8 +53,7 @@ func main() {
 	fs, err = os.OpenFile("log/logs.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 
 	if err != nil {
-		fmt.Println("Error creating a new log file: ", err)
-		os.Exit(1)
+		log.Fatal("Error creating new log file", err)
 	}
 
 	logger.Init(fs)
