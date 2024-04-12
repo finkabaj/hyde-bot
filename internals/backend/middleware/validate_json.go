@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -34,7 +33,6 @@ func init() {
 func ValidateJson[T any]() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Println("ValidateJson")
 			body := r.Body
 			defer body.Close()
 

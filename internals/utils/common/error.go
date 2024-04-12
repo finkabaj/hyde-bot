@@ -14,6 +14,7 @@ type ErrorResponseBuilder interface {
 	SetValidationFields(fields map[string]string) ErrorResponseBuilder
 	SetStatus(s int) ErrorResponseBuilder
 	Send(w http.ResponseWriter) error
+	Get() *ErrorResponse
 }
 
 type errorResponseBuilder struct {
@@ -53,4 +54,8 @@ func (e *errorResponseBuilder) Send(w http.ResponseWriter) (err error) {
 	err = MarshalBody(w, e.errorResponse.Status, e.errorResponse)
 
 	return
+}
+
+func (e *errorResponseBuilder) Get() *ErrorResponse {
+	return e.errorResponse
 }

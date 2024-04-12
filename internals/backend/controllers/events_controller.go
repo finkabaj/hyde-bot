@@ -14,12 +14,12 @@ import (
 )
 
 type EventsController struct {
-	service *services.EventsService
+	service services.IEventsService
 }
 
 var eventsController *EventsController
 
-func NewEventsController(es *services.EventsService) *EventsController {
+func NewEventsController(es services.IEventsService) *EventsController {
 	if eventsController == nil {
 		eventsController = &EventsController{
 			service: es,
@@ -64,15 +64,6 @@ func (ec *EventsController) postGuild(w http.ResponseWriter, r *http.Request) {
 
 func (ec *EventsController) getGuild(w http.ResponseWriter, r *http.Request) {
 	gId := chi.URLParam(r, "id")
-
-	if gId == "" {
-		logger.Debug("Guild ID is empty")
-		common.NewErrorResponseBuilder(guild.EmptyGuildId).
-			SetStatus(http.StatusBadRequest).
-			SetMessage("Provide a guild id").
-			Send(w)
-		return
-	}
 
 	g, err := ec.service.GetGuild(gId)
 

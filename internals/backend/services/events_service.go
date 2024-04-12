@@ -5,6 +5,11 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/utils/guild"
 )
 
+type IEventsService interface {
+	CreateGuild(g *guild.GuildCreate) (*guild.Guild, error)
+	GetGuild(gId string) (*guild.Guild, error)
+}
+
 type EventsService struct {
 	database db.Database
 }
