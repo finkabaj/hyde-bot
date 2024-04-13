@@ -30,7 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Init(fs)
+	logger := logger.NewLogger(fs)
 
 	r := chi.NewRouter()
 
@@ -63,7 +63,7 @@ func main() {
 	commandsController.RegisterRoutes(r)
 
 	eventService := services.NewEventsService(database)
-	eventsController := controllers.NewEventsController(eventService)
+	eventsController := controllers.NewEventsController(eventService, logger)
 	eventsController.RegisterRoutes(r)
 
 	host := os.Getenv("API_HOST")

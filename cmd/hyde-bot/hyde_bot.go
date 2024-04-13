@@ -56,7 +56,7 @@ func main() {
 		log.Fatal("Error creating new log file", err)
 	}
 
-	logger.Init(fs)
+	logger.NewLogger(fs)
 
 	if err != nil {
 		logger.Fatal(err, logger.LogFields{"message": "Error creating a new log file"})

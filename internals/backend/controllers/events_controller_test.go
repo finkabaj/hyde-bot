@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -16,21 +17,21 @@ import (
 
 var mockService *mogs.MockEventsService = mogs.NewMockEventsService()
 var r *chi.Mux = chi.NewRouter()
-var ec *EventsController = NewEventsController(mockService)
+var ec *EventsController = NewEventsController(mockService, mogs.NewMockLogger())
 
-func init() {
+func TestGetGuild(t *testing.T) {
 	ec.RegisterRoutes(r)
+	t.Run("Positive", testGetGuildPositive)
+	t.Run("NegativeNotFound", testGetGuildNegativeNotFound)
+	t.Run("NegativeInternalError", testGetGuildNegativeInternalError)
 }
 
-func TestGetGuildPositive(t *testing.T) {
-	gId := "1c"
+func testGetGuildPositive(t *testing.T) {
+	gId := "positive"
 	expectedResponse := guild.Guild{
-		GuildId: gId,
-		OwnerId: "one ass",
+		GuildId: "positive",
+		OwnerId: "positive",
 	}
-	var expectedError error = nil
-
-	mockService.On("GetGuild", gId).Return(&expectedResponse, expectedError)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
@@ -45,14 +46,12 @@ func TestGetGuildPositive(t *testing.T) {
 	mockService.AssertExpectations(t)
 }
 
-func TestGetGuildNegative(t *testing.T) {
-	gId := "1ass"
+func testGetGuildNegativeNotFound(t *testing.T) {
+	gId := "negativeNotFound"
 	expectedResponse := common.NewErrorResponseBuilder(guild.ErrGuildNotFound).
 		SetStatus(http.StatusNotFound).
 		SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
 		Get()
-
-	mockService.On("GetGuild", gId).Return(nil, nil)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
@@ -64,6 +63,28 @@ func TestGetGuildNegative(t *testing.T) {
 	}
 
 	assert.Equal(t, rr.Code, http.StatusNotFound)
+	assert.Equal(t, expectedResponse, actualRespose)
+
+	mockService.AssertExpectations(t)
+}
+
+func testGetGuildNegativeInternalError(t *testing.T) {
+	gId := "negativeInternalError"
+	expectedError := errors.New("Internal error")
+	expectedResponse := common.NewErrorResponseBuilder(expectedError).
+		SetStatus(http.StatusInternalServerError).
+		Get()
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
+	r.ServeHTTP(rr, req)
+
+	var actualRespose *common.ErrorResponse
+	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
+		fmt.Println(err)
+	}
+
+	assert.Equal(t, rr.Code, http.StatusInternalServerError)
 	assert.Equal(t, expectedResponse, actualRespose)
 
 	mockService.AssertExpectations(t)
