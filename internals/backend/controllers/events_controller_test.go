@@ -33,6 +33,8 @@ func testGetGuildPositive(t *testing.T) {
 		OwnerId: "positive",
 	}
 
+	mockService.On("GetGuild", gId).Return(&expectedResponse, nil)
+
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
@@ -52,6 +54,8 @@ func testGetGuildNegativeNotFound(t *testing.T) {
 		SetStatus(http.StatusNotFound).
 		SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
 		Get()
+
+	mockService.On("GetGuild", gId).Return(nil, nil)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
@@ -74,6 +78,8 @@ func testGetGuildNegativeInternalError(t *testing.T) {
 	expectedResponse := common.NewErrorResponseBuilder(expectedError).
 		SetStatus(http.StatusInternalServerError).
 		Get()
+
+	mockService.On("GetGuild", gId).Return(nil, expectedError)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
