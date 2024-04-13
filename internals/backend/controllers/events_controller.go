@@ -77,7 +77,7 @@ func (ec *EventsController) getGuild(w http.ResponseWriter, r *http.Request) {
 
 	if g == nil {
 		common.NewErrorResponseBuilder(guild.ErrGuildNotFound).
-			SetStatus(http.StatusBadRequest).
+			SetStatus(http.StatusNotFound).
 			SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
 			Send(w)
 		return

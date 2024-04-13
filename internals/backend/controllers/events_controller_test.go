@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
+
 	"testing"
 
 	mogs "github.com/finkabaj/hyde-bot/internals/backend/mocks"
@@ -14,21 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockService *mogs.MockEventsService
-var r *chi.Mux
-var rr *httptest.ResponseRecorder
-var ec *EventsController
+var mockService *mogs.MockEventsService = mogs.NewMockEventsService()
+var r *chi.Mux = chi.NewRouter()
+var ec *EventsController = NewEventsController(mockService)
 
-func TestMain(m *testing.M) {
-	mockService = mogs.NewMockEventsService()
-	r = chi.NewRouter()
-	rr = httptest.NewRecorder()
-	ec = NewEventsController(mockService)
+func init() {
 	ec.RegisterRoutes(r)
-
-	exitVal := m.Run()
-
-	os.Exit(exitVal)
 }
 
 func TestGetGuildPositive(t *testing.T) {
@@ -39,8 +30,9 @@ func TestGetGuildPositive(t *testing.T) {
 	}
 	var expectedError error = nil
 
-	mockService.On("GetGuild", gId).Return(expectedResponse, expectedError)
+	mockService.On("GetGuild", gId).Return(&expectedResponse, expectedError)
 
+	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
 
@@ -48,6 +40,30 @@ func TestGetGuildPositive(t *testing.T) {
 	common.UnmarshalBody(rr.Result().Body, &actualRespose)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
+	assert.Equal(t, expectedResponse, actualRespose)
+
+	mockService.AssertExpectations(t)
+}
+
+func TestGetGuildNegative(t *testing.T) {
+	gId := "1ass"
+	expectedResponse := common.NewErrorResponseBuilder(guild.ErrGuildNotFound).
+		SetStatus(http.StatusNotFound).
+		SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
+		Get()
+
+	mockService.On("GetGuild", gId).Return(nil, nil)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
+	r.ServeHTTP(rr, req)
+
+	var actualRespose *common.ErrorResponse
+	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
+		fmt.Println(err)
+	}
+
+	assert.Equal(t, rr.Code, http.StatusNotFound)
 	assert.Equal(t, expectedResponse, actualRespose)
 
 	mockService.AssertExpectations(t)

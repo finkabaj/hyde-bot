@@ -27,11 +27,10 @@ func (m *MockEventsService) CreateGuild(g *guild.GuildCreate) (*guild.Guild, err
 
 func (m *MockEventsService) GetGuild(gId string) (*guild.Guild, error) {
 	args := m.Called(gId)
-	g, ok := args.Get(0).(guild.Guild)
 
-	if !ok {
-		return nil, args.Error(1)
+	if args.Get(0) == nil {
+		return nil, nil
 	}
 
-	return &g, args.Error(1)
+	return args.Get(0).(*guild.Guild), args.Error(1)
 }

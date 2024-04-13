@@ -1,6 +1,8 @@
 package common
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type ErrorResponse struct {
 	Error            string            `json:"error,omitempty"`
