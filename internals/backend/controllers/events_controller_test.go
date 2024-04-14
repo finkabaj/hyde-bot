@@ -36,6 +36,7 @@ func TestCreateGuild(t *testing.T) {
 	t.Run("Positive", testCreateGuildPositive)
 	t.Run("NegativeValidationNil", testCreateGuildNegativeValidationNil)
 	t.Run("NegativeValidation", testCreateGuildNegativeValidation)
+	t.Run("NegativeConflict", testCreateGuildNegativeConflict)
 }
 
 func testGetGuildPositive(t *testing.T) {
@@ -200,4 +201,34 @@ func testCreateGuildNegativeValidation(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
+
+	mockService.AssertExpectations(t)
+}
+
+func testCreateGuildNegativeConflict(t *testing.T) {
+	expectedResponse := common.NewErrorResponseBuilder(guild.ErrGuildConflict).
+		SetStatus(http.StatusBadRequest).
+		SetMessage("Guild with id: SAS6KDIezh0ckrQhySh already exists").
+		Get()
+
+	sendedBody := guild.GuildCreate{GuildId: "SAS6KDIezh0ckrQhySh", OwnerId: "COCxJ5WHIoHJinXjSX"}
+	var byf bytes.Buffer
+	json.NewEncoder(&byf).Encode(sendedBody)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/guild", &byf)
+
+	mockService.On("CreateGuild", &sendedBody).Return(nil, guild.ErrGuildConflict)
+
+	r.ServeHTTP(rr, req)
+
+	var actualRespose *common.ErrorResponse
+	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
+		fmt.Println(err)
+	}
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, expectedResponse, actualRespose)
+
+	mockService.AssertExpectations(t)
 }

@@ -1,8 +1,6 @@
 package mogs
 
 import (
-	//"errors"
-
 	"github.com/finkabaj/hyde-bot/internals/utils/guild"
 	"github.com/stretchr/testify/mock"
 )
