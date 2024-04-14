@@ -14,15 +14,17 @@ import (
 )
 
 type EventsController struct {
-	service *services.EventsService
+	service services.IEventsService
+	logger  logger.ILogger
 }
 
 var eventsController *EventsController
 
-func NewEventsController(es *services.EventsService) *EventsController {
+func NewEventsController(es services.IEventsService, l logger.ILogger) *EventsController {
 	if eventsController == nil {
 		eventsController = &EventsController{
 			service: es,
+			logger:  l,
 		}
 	}
 	return eventsController
@@ -47,7 +49,7 @@ func (ec *EventsController) postGuild(w http.ResponseWriter, r *http.Request) {
 			Send(w)
 		return
 	} else if err != nil {
-		logger.Error(err, logger.LogFields{"message": "error while creating new guild"})
+		ec.logger.Error(err, logger.LogFields{"message": "error while creating new guild"})
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusInternalServerError).
 			Send(w)
@@ -55,7 +57,7 @@ func (ec *EventsController) postGuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := common.MarshalBody(w, http.StatusCreated, &newGuild); err != nil {
-		logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
+		ec.logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusInternalServerError).
 			Send(w)
@@ -65,19 +67,10 @@ func (ec *EventsController) postGuild(w http.ResponseWriter, r *http.Request) {
 func (ec *EventsController) getGuild(w http.ResponseWriter, r *http.Request) {
 	gId := chi.URLParam(r, "id")
 
-	if gId == "" {
-		logger.Debug("Guild ID is empty")
-		common.NewErrorResponseBuilder(guild.EmptyGuildId).
-			SetStatus(http.StatusBadRequest).
-			SetMessage("Provide a guild id").
-			Send(w)
-		return
-	}
-
 	g, err := ec.service.GetGuild(gId)
 
 	if err != nil {
-		logger.Error(err)
+		ec.logger.Error(err)
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusInternalServerError).
 			Send(w)
@@ -86,14 +79,14 @@ func (ec *EventsController) getGuild(w http.ResponseWriter, r *http.Request) {
 
 	if g == nil {
 		common.NewErrorResponseBuilder(guild.ErrGuildNotFound).
-			SetStatus(http.StatusBadRequest).
+			SetStatus(http.StatusNotFound).
 			SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
 			Send(w)
 		return
 	}
 
 	if err := common.MarshalBody(w, http.StatusOK, &g); err != nil {
-		logger.Error(err, logger.LogFields{"message": "Error while marshaling get guild"})
+		ec.logger.Error(err, logger.LogFields{"message": "Error while marshaling get guild"})
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusInternalServerError).
 			Send(w)

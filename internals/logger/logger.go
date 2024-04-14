@@ -7,11 +7,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ILogger interface {
+	Fatal(err error, fields ...LogFields)
+	Error(err error, fields ...LogFields)
+	Warn(err error, fields ...LogFields)
+	Info(message string, fields ...LogFields)
+	Debug(message string, fields ...LogFields)
+}
+
+type Logger struct {
+	logger *logrus.Logger
+}
+
 type LogFields logrus.Fields
 
-var Logger *logrus.Logger
+var logger *Logger
 
-func Init(output *os.File) *logrus.Logger {
+// If logger used in a package that should be tested, you should use Logger class methods instead of global functions.
+func NewLogger(output *os.File) *Logger {
 	var target io.Writer
 	var level logrus.Level
 	var format logrus.Formatter
@@ -31,55 +44,84 @@ func Init(output *os.File) *logrus.Logger {
 		format = &logrus.JSONFormatter{}
 	}
 
-	Logger = &logrus.Logger{
-		Out:       target,
-		Level:     level,
-		Formatter: format,
+	if logger == nil {
+		logger = &Logger{
+			logger: &logrus.Logger{
+				Out:       target,
+				Level:     level,
+				Formatter: format,
+			},
+		}
 	}
 
-	return Logger
+	return logger
 }
 
 // Logs fattal error and exits the program fields are optional
-func Fatal(err error, fields ...LogFields) {
+func (l *Logger) Fatal(err error, fields ...LogFields) {
 	if len(fields) > 0 {
-		Logger.WithFields(logrus.Fields(fields[0])).Fatal(err)
+		l.logger.WithFields(logrus.Fields(fields[0])).Fatal(err)
 	} else {
-		Logger.Fatal(err)
+		l.logger.Fatal(err)
 	}
 }
 
 // Logs error fields are optional
-func Error(err error, fields ...LogFields) {
+func (l *Logger) Error(err error, fields ...LogFields) {
 	if len(fields) > 0 {
-		Logger.WithFields(logrus.Fields(fields[0])).Error(err)
+		l.logger.WithFields(logrus.Fields(fields[0])).Error(err)
 	} else {
-		Logger.Error(err)
+		l.logger.Error(err)
 	}
 }
 
 // Logs warning fields are optional
-func Warn(err error, fields ...LogFields) {
+func (l *Logger) Warn(err error, fields ...LogFields) {
 	if len(fields) > 0 {
-		Logger.WithFields(logrus.Fields(fields[0])).Warn(err)
+		l.logger.WithFields(logrus.Fields(fields[0])).Warn(err)
 	} else {
-		Logger.Warn(err)
+		l.logger.Warn(err)
 	}
 }
 
 // Logs info fields are optional
-func Info(message string, fields ...LogFields) {
+func (l *Logger) Info(message string, fields ...LogFields) {
 	if len(fields) > 0 {
-		Logger.WithFields(logrus.Fields(fields[0])).Info(message)
+		l.logger.WithFields(logrus.Fields(fields[0])).Info(message)
 	} else {
-		Logger.Info(message)
+		l.logger.Info(message)
 	}
 }
 
-func Debug(message string, fields ...LogFields) {
+func (l *Logger) Debug(message string, fields ...LogFields) {
 	if len(fields) > 0 {
-		Logger.WithFields(logrus.Fields(fields[0])).Debug(message)
+		l.logger.WithFields(logrus.Fields(fields[0])).Debug(message)
 	} else {
-		Logger.Debug(message)
+		l.logger.Debug(message)
 	}
+}
+
+// Logs fatal error and exits the program fields are optional
+func Fatal(err error, fields ...LogFields) {
+	logger.Fatal(err, fields...)
+}
+
+// Logs error fields are optional
+func Error(err error, fields ...LogFields) {
+	logger.Error(err, fields...)
+}
+
+// Logs warning fields are optional
+func Warn(err error, fields ...LogFields) {
+	logger.Warn(err, fields...)
+}
+
+// Logs info fields are optional
+func Info(message string, fields ...LogFields) {
+	logger.Info(message, fields...)
+}
+
+// Logs debug fields are optional
+func Debug(message string, fields ...LogFields) {
+	logger.Debug(message, fields...)
 }

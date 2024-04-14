@@ -2,4 +2,4 @@
 .DS_STORE
 *.log
 dist/
-
+cover.out
