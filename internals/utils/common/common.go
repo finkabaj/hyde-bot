@@ -12,6 +12,10 @@ var (
 	ErrValidation = errors.New("validation error")
 )
 
+func GetApiUrl(host, port, path string) string {
+	return "http://" + host + ":" + port + path
+}
+
 // Reads json body to v
 func UnmarshalBody(body io.ReadCloser, v any) (err error) {
 	err = json.NewDecoder(body).Decode(v)

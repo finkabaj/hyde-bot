@@ -17,8 +17,7 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 	typedEvent, ok := event.(*discordgo.GuildCreate)
 
 	if !ok {
-		err := errors.New("Incorect type in HandleGuildCreate")
-		logger.Warn(err)
+		logger.Warn(errors.New("Incorect type in HandleGuildCreate"))
 		return
 	}
 
@@ -31,9 +30,10 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 
 	if err != nil {
 		logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
+		return
 	}
 
-	url := "http://" + os.Getenv("API_HOST") + ":" + os.Getenv("API_PORT") + "/guild"
+	url := common.GetApiUrl(os.Getenv("API_HOST"), os.Getenv("API_PORT"), "/guild")
 
 	bodyReader := bytes.NewReader(jsonInfo)
 	res, err := http.Post(url, "application/json", bodyReader)
@@ -46,7 +46,15 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 	body := res.Body
 	defer body.Close()
 
-	var result *guild.GuildCreate
+	var result interface{}
 
 	common.UnmarshalBody(body, &result)
+
+	if _, ok := result.(guild.Guild); !ok {
+		if err, ok := result.(common.ErrorResponse); ok {
+			logger.Error(errors.New(err.Message), logger.ToLogFields(err.ValidationErrors))
+		}
+
+		logger.Error(errors.New("Error while unmarshalling guild response"))
+	}
 }
