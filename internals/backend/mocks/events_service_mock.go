@@ -16,23 +16,24 @@ func NewMockEventsService() *MockEventsService {
 }
 
 func (m *MockEventsService) CreateGuild(g *guild.GuildCreate) (*guild.Guild, error) {
-	ret := m.Called(g)
+	args := m.Called(g)
 
-	var r0 *guild.Guild
-	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*guild.Guild)
+	var a0 *guild.Guild
+
+	if args.Get(0) != nil {
+		a0 = args.Get(0).(*guild.Guild)
 	}
-	r1 := ret.Error(1)
 
-	return r0, r1
+	return a0, args.Error(1)
 }
 
 func (m *MockEventsService) GetGuild(gId string) (*guild.Guild, error) {
 	args := m.Called(gId)
 
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+	var a0 *guild.Guild
+	if args.Get(0) != nil {
+		a0 = args.Get(0).(*guild.Guild)
 	}
 
-	return args.Get(0).(*guild.Guild), args.Error(1)
+	return a0, args.Error(1)
 }
