@@ -44,7 +44,7 @@ func (ec *EventsController) postGuild(w http.ResponseWriter, r *http.Request) {
 
 	if err == guild.ErrGuildConflict {
 		common.NewErrorResponseBuilder(err).
-			SetStatus(http.StatusBadRequest).
+			SetStatus(http.StatusConflict).
 			SetMessage(fmt.Sprintf("Guild with id: %s already exists", g.GuildId)).
 			Send(w)
 		return
@@ -78,7 +78,7 @@ func (ec *EventsController) getGuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if g == nil {
-		common.NewErrorResponseBuilder(guild.ErrGuildNotFound).
+		common.NewErrorResponseBuilder(common.ErrNotFound).
 			SetStatus(http.StatusNotFound).
 			SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
 			Send(w)

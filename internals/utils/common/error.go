@@ -1,7 +1,14 @@
 package common
 
 import (
+	"errors"
 	"net/http"
+)
+
+var (
+	ErrBadRequest = errors.New("bad request")
+	ErrNotFound   = errors.New("not found")
+	ErrInternal   = errors.New("internal error")
 )
 
 type ErrorResponse struct {

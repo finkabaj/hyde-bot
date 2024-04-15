@@ -14,7 +14,6 @@ type Guild struct {
 }
 
 var (
-	ErrGuildNotFound = errors.New("guild not found")
 	ErrGuildConflict = errors.New("guild already exists")
 	EmptyGuildId     = errors.New("guild id not provided")
 )
