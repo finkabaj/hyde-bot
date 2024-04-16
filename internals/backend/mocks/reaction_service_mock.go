@@ -26,8 +26,8 @@ func (m *MockReactionService) GetReactionRules(gId string) (*[]rule.ReactionRule
 
 }
 
-func (m *MockReactionService) DeleteReactionRules(rules *[]rule.ReactionRule) error {
-	args := m.Called(rules)
+func (m *MockReactionService) DeleteReactionRules(query *[]rule.DeleteReactionRuleQuery, gId string) error {
+	args := m.Called(query, gId)
 
 	return args.Error(0)
 }

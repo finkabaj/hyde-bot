@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: After tests are written, initialize the controller and service
 var mockReactionService *mogs.MockReactionService = mogs.NewMockReactionService()
 var rc *RulesController = NewRulesController(mockReactionService, mogs.NewMockLogger())
 
@@ -26,6 +26,7 @@ func TestCreateReactionRules(t *testing.T) {
 	t.Run("NegativeConflict", testCreateReactionRuleNegativeConflict)
 	t.Run("NegativeIncompatible", testCreateReactionRuleNegativeIncompatible)
 	t.Run("NegativeBadRequest", testCreateReactionRuleNegativeBadRequest)
+	t.Run("NegativeInternalError", testCreateReactionRuleNegativeInternalError)
 }
 
 func TestGetReactionsRules(t *testing.T) {
@@ -35,7 +36,10 @@ func TestGetReactionsRules(t *testing.T) {
 }
 
 func TestDeleteReactionRules(t *testing.T) {
-
+	t.Run("Positive", testDeleteReactionRulesPositive)
+	t.Run("NegativeNotFound", testDeleteReactionRulesNotFound)
+	t.Run("NegativeInternalError", testDeleteReactionRulesInternalError)
+	t.Run("NegativeIncompatible", testDeleteReactionRulesIncompatible)
 }
 
 func testCreateReactionRulePositive(t *testing.T) {
@@ -74,6 +78,37 @@ func testCreateReactionRulePositive(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, rr.Code)
 	assert.Equal(t, expectedResponse, actualResponse)
+}
+
+func testCreateReactionRuleNegativeInternalError(t *testing.T) {
+	expectedResponse := common.NewErrorResponseBuilder(common.ErrInternal).
+		SetStatus(http.StatusInternalServerError).
+		Get()
+	sendedBody := []rule.ReactionRule{
+		{
+			EmojiName:  "🤰",
+			RuleAuthor: "J3nxJ5WHIoHJinXjIE",
+			GuildId:    "QaK6KDIezh0ckrQhy",
+			Action:     rule.Delete,
+		},
+	}
+
+	mockReactionService.On("CreateReactionRules", &sendedBody).Return(nil, common.ErrInternal)
+
+	var byf bytes.Buffer
+	json.NewEncoder(&byf).Encode(sendedBody)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "rules/reaction", &byf)
+	r.ServeHTTP(rr, req)
+
+	var actualResponse common.ErrorResponse
+	common.UnmarshalBody(rr.Result().Body, actualResponse)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Equal(t, expectedResponse, actualResponse)
+
+	mockReactionService.AssertExpectations(t)
 }
 
 func testCreateReactionRuleNegativeConflict(t *testing.T) {
@@ -247,6 +282,156 @@ func testGetReactionRulesInternalError(t *testing.T) {
 	common.UnmarshalBody(rr.Result().Body, actualResponse)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Equal(t, expectedResponse, actualResponse)
+
+	mockReactionService.AssertExpectations(t)
+}
+
+// TODO: change body to query params
+
+func testDeleteReactionRulesPositive(t *testing.T) {
+	expectedResponse := common.OkResponse{Message: "successfully deleted 2 rules"}
+	query := []rule.DeleteReactionRuleQuery{
+		{
+			EmojiName: "🤰",
+		},
+		{
+			EmojiName: "💦",
+		},
+		{
+			EmojiId: "12321",
+		},
+	}
+	gId := "QaK6KDIezh0ckrQPo"
+
+	encodedQuery := rule.EncodeDeleteReactQuery(query)
+
+	mockReactionService.On("DeleteReactionRules", &query).Return(nil)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("rule/reaction/%s?%s", gId, encodedQuery), nil)
+	r.ServeHTTP(rr, req)
+
+	var actualResponse common.OkResponse
+	common.UnmarshalBody(rr.Result().Body, actualResponse)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, expectedResponse, actualResponse)
+
+	mockReactionService.AssertExpectations(t)
+}
+
+func testDeleteReactionRulesNotFound(t *testing.T) {
+	expectedResponse := common.NewErrorResponseBuilder(common.ErrNotFound).
+		SetMessage("no rules found for the guild").
+		SetStatus(http.StatusNotFound).
+		Get()
+	query := []rule.DeleteReactionRuleQuery{
+		{
+			EmojiName: "🤰",
+		},
+	}
+	gId := "QaK6KDIezh0ckrQnF"
+
+	encodedQuery := rule.EncodeDeleteReactQuery(query)
+
+	mockReactionService.On("DeleteReactionRules", &query, gId).Return(common.ErrNotFound)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("rule/reaction/%s?%s", gId, encodedQuery), nil)
+	r.ServeHTTP(rr, req)
+
+	var actualResponse common.ErrorResponse
+	common.UnmarshalBody(rr.Result().Body, actualResponse)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+	assert.Equal(t, expectedResponse, actualResponse)
+
+	mockReactionService.AssertExpectations(t)
+}
+
+func testDeleteReactionRulesInternalError(t *testing.T) {
+	expectedResponse := common.NewErrorResponseBuilder(common.ErrInternal).
+		SetStatus(http.StatusInternalServerError).
+		Get()
+	query := []rule.DeleteReactionRuleQuery{
+		{
+			EmojiId: "123",
+		},
+	}
+	gId := "QaK6KDIezh0ckrQIe"
+
+	encodedQuery := rule.EncodeDeleteReactQuery(query)
+
+	mockReactionService.On("DeleteReactionRules", &query, gId).Return(common.ErrInternal)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("rule/reaction/%s?%s", gId, encodedQuery), nil)
+	r.ServeHTTP(rr, req)
+
+	var actualResponse common.ErrorResponse
+	common.UnmarshalBody(rr.Result().Body, actualResponse)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Equal(t, expectedResponse, actualResponse)
+
+	mockReactionService.AssertExpectations(t)
+}
+
+func testDeleteReactionRulesIncompatible(t *testing.T) {
+	expectedResponse := common.NewErrorResponseBuilder(rule.ErrRuleReactionIncompatible).
+		SetMessage("either emoji name or emoji id must be provided").
+		SetStatus(http.StatusConflict).
+		Get()
+	query := []rule.DeleteReactionRuleQuery{
+		{
+			EmojiName: "🤰",
+			EmojiId:   "123",
+		},
+	}
+	gId := "QaK6KDIezh0ckrQIN"
+
+	encodedQuery := rule.EncodeDeleteReactQuery(query)
+
+	mockReactionService.On("DeleteReactionRules", &query, gId).Return(rule.ErrRuleReactionIncompatible)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("rule/reaction/%s?%s", gId, encodedQuery), nil)
+	r.ServeHTTP(rr, req)
+
+	var actualResponse common.ErrorResponse
+	common.UnmarshalBody(rr.Result().Body, actualResponse)
+
+	assert.Equal(t, http.StatusConflict, rr.Code)
+	assert.Equal(t, expectedResponse, actualResponse)
+
+	mockReactionService.AssertExpectations(t)
+}
+
+func TestDeleteReactionRulesBadRequest(t *testing.T) {
+	expectedResponse := common.NewErrorResponseBuilder(common.ErrBadRequest).
+		SetMessage("invalid request body").
+		SetStatus(http.StatusBadRequest).
+		Get()
+	query := []rule.DeleteReactionRuleQuery{
+		{
+			EmojiId: "123132",
+		},
+	}
+	gId := "QaK6KDIezh0ckrQBR"
+
+	encodedQuery := rule.EncodeDeleteReactQuery(query)
+
+	mockReactionService.On("DeleteReactionRules", &query, gId).Return(common.ErrBadRequest)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("rule/reaction/%s?%s", gId, encodedQuery), nil)
+	r.ServeHTTP(rr, req)
+
+	var actualResponse common.ErrorResponse
+	common.UnmarshalBody(rr.Result().Body, actualResponse)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 	assert.Equal(t, expectedResponse, actualResponse)
 
 	mockReactionService.AssertExpectations(t)

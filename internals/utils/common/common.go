@@ -12,6 +12,10 @@ var (
 	ErrValidation = errors.New("validation error")
 )
 
+type OkResponse struct {
+	Message string `json:"message"`
+}
+
 func GetApiUrl(host, port, path string) string {
 	return "http://" + host + ":" + port + path
 }

@@ -1,6 +1,10 @@
 package rule
 
-import "errors"
+import (
+	"errors"
+	"net/url"
+	"strconv"
+)
 
 type ReactAction int
 
@@ -19,7 +23,52 @@ type ReactionRule struct {
 	Action     ReactAction `json:"action" validate:"number"`
 }
 
+type DeleteReactionRuleQuery struct {
+	EmojiId   string `json:"emojiId,omitempty"`
+	EmojiName string `json:"emojiName,omitempty"`
+}
+
 var (
 	ErrRuleReactionConflict     = errors.New("rule reaction conflict")
 	ErrRuleReactionIncompatible = errors.New("rule reaction incompatible")
 )
+
+func EncodeDeleteReactQuery(queries []DeleteReactionRuleQuery) string {
+	values := url.Values{}
+
+	for i, query := range queries {
+
+		if query.EmojiId != "" {
+			values.Add("rules["+strconv.Itoa(i)+"][emojiId]", query.EmojiId)
+		}
+
+		if query.EmojiName != "" {
+			values.Add("rules["+strconv.Itoa(i)+"][emojiName]", query.EmojiName)
+		}
+	}
+
+	return values.Encode()
+}
+
+func DecodeDeleteReactQuery(query string) []DeleteReactionRuleQuery {
+	values, _ := url.ParseQuery(query)
+	rules := []DeleteReactionRuleQuery{}
+
+	for i := 0; ; i++ {
+		emojiId := values.Get("rules[" + strconv.Itoa(i) + "][emojiId]")
+		emojiName := values.Get("rules[" + strconv.Itoa(i) + "][emojiName]")
+
+		if emojiId == "" && emojiName == "" {
+			break
+		}
+
+		rule := DeleteReactionRuleQuery{
+			EmojiId:   emojiId,
+			EmojiName: emojiName,
+		}
+
+		rules = append(rules, rule)
+	}
+
+	return rules
+}
