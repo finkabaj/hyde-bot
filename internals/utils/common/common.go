@@ -20,7 +20,7 @@ func GetApiUrl(host, port, path string) string {
 	return "http://" + host + ":" + port + path
 }
 
-// Reads json body to v
+// Reads json body to v. Body is ReadCloser
 func UnmarshalBody(body io.ReadCloser, v any) (err error) {
 	err = json.NewDecoder(body).Decode(v)
 
@@ -32,6 +32,13 @@ func MarshalBody(w http.ResponseWriter, status int, v any) (err error) {
 	w.Header().Set("Content-Type", "application/json; charset=utf8")
 	w.WriteHeader(status)
 	err = json.NewEncoder(w).Encode(v)
+
+	return
+}
+
+// Use this function if you have UnmarshalJSON method in your struct
+func UnmarshalBodyBytes(body []byte, v any) (err error) {
+	err = json.Unmarshal(body, v)
 
 	return
 }

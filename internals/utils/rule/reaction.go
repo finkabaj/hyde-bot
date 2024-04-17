@@ -1,6 +1,7 @@
 package rule
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strconv"
@@ -32,6 +33,16 @@ var (
 	ErrRuleReactionConflict     = errors.New("rule reaction conflict")
 	ErrRuleReactionIncompatible = errors.New("rule reaction incompatible")
 )
+
+func (a *ReactAction) UnmarshalJSON(data []byte) error {
+	var intValue int
+	err := json.Unmarshal(data, &intValue)
+	if err != nil {
+		return err
+	}
+	*a = ReactAction(intValue)
+	return nil
+}
 
 func EncodeDeleteReactQuery(queries []DeleteReactionRuleQuery) string {
 	values := url.Values{}

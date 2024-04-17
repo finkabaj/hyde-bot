@@ -51,6 +51,7 @@ func testGetGuildPositive(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose guild.Guild
 	common.UnmarshalBody(rr.Result().Body, &actualRespose)
@@ -73,6 +74,7 @@ func testGetGuildNegativeNotFound(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -97,6 +99,7 @@ func testGetGuildNegativeInternalError(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -124,6 +127,7 @@ func testGetGuildNegativeWtf(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -150,6 +154,7 @@ func testCreateGuildPositive(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/guild", &byf)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose guild.Guild
 	common.UnmarshalBody(rr.Result().Body, &actualRespose)
@@ -169,6 +174,7 @@ func testCreateGuildNegativeValidationNil(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/guild", nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -193,6 +199,7 @@ func testCreateGuildNegativeValidation(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/guild", &byf)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -221,6 +228,7 @@ func testCreateGuildNegativeConflict(t *testing.T) {
 	mockEventsService.On("CreateGuild", &sendedBody).Return(nil, guild.ErrGuildConflict)
 
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
