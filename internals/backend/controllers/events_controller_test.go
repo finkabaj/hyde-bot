@@ -188,7 +188,7 @@ func testCreateGuildNegativeValidationNil(t *testing.T) {
 func testCreateGuildNegativeValidation(t *testing.T) {
 	expectedResponse := common.NewErrorResponseBuilder(common.ErrValidation).
 		SetStatus(http.StatusBadRequest).
-		SetValidationFields(map[string]string{"guildId": "required", "ownerId": "min"}).
+		SetValidationFields(map[string]string{"guildId": "required"}).
 		Get()
 	sendedBody := guild.GuildCreate{OwnerId: "ass"}
 

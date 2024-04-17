@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 
@@ -45,16 +46,27 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 
 	body := res.Body
 	defer body.Close()
+	b, err := io.ReadAll(body)
 
-	var result interface{}
-
-	common.UnmarshalBody(body, &result)
-
-	if _, ok := result.(guild.Guild); !ok {
-		if err, ok := result.(common.ErrorResponse); ok {
-			logger.Error(errors.New(err.Message), logger.ToLogFields(err.ValidationErrors))
-		}
-
-		logger.Error(errors.New("Error while unmarshalling guild response"))
+	if err != nil {
+		logger.Fatal(err, logger.LogFields{"MESSAGE": "The bot cannot continue to work correctly", "AT": "guild_create"})
 	}
+
+	var result guild.Guild
+
+	if err := common.UnmarshalBodyBytes(b, &result); err != nil {
+		logger.Error(errors.New("Error while unmarshaling guild create"))
+	}
+
+	if result.GuildId != "" && result.OwnerId != "" {
+		return
+	}
+
+	var errRes common.ErrorResponse
+
+	if err := common.UnmarshalBodyBytes(b, &errRes); err != nil {
+		logger.Error(errors.New("Error while unmarshaling guild create error"))
+	}
+
+	logger.Error(errors.New(errRes.Error), logger.ToLogFields(errRes.ValidationErrors))
 }
