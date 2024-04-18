@@ -68,3 +68,28 @@ func (e *errorResponseBuilder) Send(w http.ResponseWriter) (err error) {
 func (e *errorResponseBuilder) Get() *ErrorResponse {
 	return e.errorResponse
 }
+
+func SendBadRequestError(w http.ResponseWriter, m ...string) {
+	b := NewErrorResponseBuilder(ErrBadRequest).
+		SetStatus(http.StatusBadRequest)
+	if len(m) == 1 {
+		b.SetMessage(m[0])
+	}
+	b.Send(w)
+}
+
+func SendValidationError(w http.ResponseWriter, valFields map[string]string) {
+	NewErrorResponseBuilder(ErrValidation).
+		SetStatus(http.StatusBadRequest).
+		SetValidationFields(valFields).
+		Send(w)
+}
+
+func SendInternalError(w http.ResponseWriter, m ...string) {
+	b := NewErrorResponseBuilder(ErrInternal).
+		SetStatus(http.StatusInternalServerError)
+	if len(m) == 1 {
+		b.SetMessage(m[0])
+	}
+	b.Send(w)
+}

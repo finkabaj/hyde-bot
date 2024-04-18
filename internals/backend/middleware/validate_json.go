@@ -27,6 +27,9 @@ func init() {
 	})
 }
 
+// **********************************
+// XXX maybe need to rewrite in future
+// **********************************
 // ValidateJson is a middleware that validates the json body of a request and respond
 // with an error if json body is empty or if the json body is invalid.
 // To use it, you must pass a struct to generic type T that has json and validate tags and call it as a function.
@@ -46,36 +49,7 @@ func ValidateJson[T any]() func(http.Handler) http.Handler {
 				return
 			}
 
-			// XXX  maybe need to update in future.
-			isSlice := reflect.TypeOf(v).Kind() == reflect.Slice
-
-			var err error
-
-			if isSlice {
-				err = validate.Var(v, "required,dive")
-			} else {
-				err = validate.Struct(v)
-			}
-
-			if err != nil {
-				if _, ok := err.(*validator.InvalidValidationError); ok {
-					// if you see this error that means that it's time to correct validate_json implementation (or you fucked up json)
-					common.NewErrorResponseBuilder(common.ErrInternal).
-						SetStatus(http.StatusInternalServerError).
-						SetMessage("incorrect json type for validation").
-						Send(w)
-					return
-				}
-				validationErrors := make(map[string]string)
-				for _, e := range err.(validator.ValidationErrors) {
-					validationErrors[e.Field()] = e.Tag()
-				}
-
-				common.NewErrorResponseBuilder(common.ErrValidation).
-					SetStatus(http.StatusBadRequest).
-					SetValidationFields(validationErrors).
-					Send(w)
-
+			if haveError := common.ValidateSliceOrStruct(w, validate, v); haveError {
 				return
 			}
 

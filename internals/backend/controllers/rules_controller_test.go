@@ -38,7 +38,7 @@ func TestGetReactionsRules(t *testing.T) {
 }
 
 func TestDeleteReactionRules(t *testing.T) {
-	//t.Run("Positive", testDeleteReactionRulesPositive)
+	t.Run("Positive", testDeleteReactionRulesPositive)
 	//t.Run("NegativeNotFound", testDeleteReactionRulesNotFound)
 	//t.Run("NegativeInternalError", testDeleteReactionRulesInternalError)
 	//t.Run("NegativeIncompatible", testDeleteReactionRulesIncompatible)
@@ -322,7 +322,7 @@ func testGetReactionRulesInternalError(t *testing.T) {
 }
 
 func testDeleteReactionRulesPositive(t *testing.T) {
-	expectedResponse := common.OkResponse{Message: "successfully deleted 2 rules"}
+	expectedResponse := common.OkResponse{Message: "successfully deleted 3 rules"}
 	query := []rule.DeleteReactionRuleQuery{
 		{
 			EmojiName: "🤰",
@@ -338,7 +338,7 @@ func testDeleteReactionRulesPositive(t *testing.T) {
 
 	encodedQuery := rule.EncodeDeleteReactQuery(query)
 
-	mockReactionService.On("DeleteReactionRules", &query).Return(nil)
+	mockReactionService.On("DeleteReactionRules", &query, gId).Return(nil)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/rules/reaction/%s?%s", gId, encodedQuery), nil)
@@ -346,7 +346,7 @@ func testDeleteReactionRulesPositive(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.OkResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, expectedResponse, actualResponse)

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/finkabaj/hyde-bot/internals/backend/middleware"
@@ -33,7 +34,7 @@ func (rc *RulesController) RegisterRoutes(r *chi.Mux) {
 		r.Route("/reaction", func(r chi.Router) {
 			r.Get("/{id}", rc.getReactions)
 			r.With(middleware.ValidateJson[[]rule.ReactionRule]()).Post("/", rc.postReactions)
-			r.Delete("/{id}", rc.deleteReactions)
+			r.With(middleware.ValidateQuery(rule.DecodeDeleteReactQuery)).Delete("/{id}", rc.deleteReactions)
 		})
 	})
 }
@@ -123,5 +124,25 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 }
 
 func (rc *RulesController) deleteReactions(w http.ResponseWriter, r *http.Request) {
+	gId := chi.URLParam(r, "id")
+	query := r.Context().Value(middleware.ValidateQueryCtxKey).([]rule.DeleteReactionRuleQuery)
 
+	err := rc.reactionService.DeleteReactionRules(&query, gId)
+
+	switch {
+	case err != nil:
+		return
+
+	}
+
+	ruleWord := "rule"
+	if len(query) > 1 {
+		ruleWord = "rules"
+	}
+	res := common.OkResponse{Message: fmt.Sprintf("successfully deleted %d %s", len(query), ruleWord)}
+
+	if err := common.MarshalBody(w, http.StatusOK, &res); err != nil {
+		rc.logger.Error(err, logger.LogFields{"message": "error while marhsalong deleteReactions response"})
+		common.SendInternalError(w, "error while marshaling deleteReactions response")
+	}
 }
