@@ -3,9 +3,11 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/finkabaj/hyde-bot/internals/backend/middleware"
 	"github.com/finkabaj/hyde-bot/internals/backend/services"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/finkabaj/hyde-bot/internals/utils/common"
+	"github.com/finkabaj/hyde-bot/internals/utils/rule"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -30,7 +32,7 @@ func (rc *RulesController) RegisterRoutes(r *chi.Mux) {
 	r.Route("/rules", func(r chi.Router) {
 		r.Route("/reaction", func(r chi.Router) {
 			r.Get("/{id}", rc.getReactions)
-			r.Post("/", rc.postReactions)
+			r.With(middleware.ValidateJson[[]rule.ReactionRule]()).Post("/", rc.postReactions)
 			r.Delete("/{id}", rc.deleteReactions)
 		})
 	})
@@ -72,7 +74,52 @@ func (rc *RulesController) getReactions(w http.ResponseWriter, r *http.Request) 
 }
 
 func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request) {
+	rRules, ok := r.Context().Value(middleware.ValidateJsonCtxKey).([]rule.ReactionRule)
 
+	if !ok {
+		rc.logger.Error(common.ErrInternal, logger.LogFields{"message": "error while validating postReactions"})
+		common.NewErrorResponseBuilder(common.ErrInternal).
+			SetStatus(http.StatusInternalServerError).
+			SetMessage("Error while validating").
+			Send(w)
+		return
+	}
+
+	newRules, err := rc.reactionService.CreateReactionRules(&rRules)
+
+	switch {
+	case err == common.ErrInternal:
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusInternalServerError).
+			Send(w)
+		return
+	case err == rule.ErrRuleReactionConflict:
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusConflict).
+			SetMessage("rule on this reaction already exists").
+			Send(w)
+		return
+	case err == rule.ErrRuleReactionIncompatible:
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusConflict).
+			SetMessage("either emoji name or emoji id must be provided").
+			Send(w)
+		return
+	case err == common.ErrBadRequest:
+		common.NewErrorResponseBuilder(err).
+			SetStatus(http.StatusBadRequest).
+			SetMessage("invalid request body").
+			Send(w)
+		return
+	}
+
+	if err := common.MarshalBody(w, http.StatusCreated, newRules); err != nil {
+		rc.logger.Error(common.ErrInternal, logger.LogFields{"message": "error while marshaling postReactions"})
+		common.NewErrorResponseBuilder(err).
+			SetMessage("Error while marshing response").
+			SetStatus(http.StatusInternalServerError).
+			Send(w)
+	}
 }
 
 func (rc *RulesController) deleteReactions(w http.ResponseWriter, r *http.Request) {

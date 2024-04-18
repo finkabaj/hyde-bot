@@ -23,11 +23,11 @@ func init() {
 }
 
 func TestCreateReactionRules(t *testing.T) {
-	// t.Run("Positive", testCreateReactionRulePositive)
-	// t.Run("NegativeConflict", testCreateReactionRuleNegativeConflict)
-	// t.Run("NegativeIncompatible", testCreateReactionRuleNegativeIncompatible)
-	// t.Run("NegativeBadRequest", testCreateReactionRuleNegativeBadRequest)
-	// t.Run("NegativeInternalError", testCreateReactionRuleNegativeInternalError)
+	t.Run("Positive", testCreateReactionRulePositive)
+	t.Run("NegativeConflict", testCreateReactionRuleNegativeConflict)
+	t.Run("NegativeIncompatible", testCreateReactionRuleNegativeIncompatible)
+	t.Run("NegativeBadRequest", testCreateReactionRuleNegativeBadRequest)
+	t.Run("NegativeInternalError", testCreateReactionRuleNegativeInternalError)
 }
 
 func TestGetReactionsRules(t *testing.T) {
@@ -78,7 +78,7 @@ func testCreateReactionRulePositive(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse []rule.ReactionRule
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusCreated, rr.Code)
 	assert.Equal(t, expectedResponse, actualResponse)
@@ -108,10 +108,10 @@ func testCreateReactionRuleNegativeInternalError(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }
@@ -141,10 +141,10 @@ func testCreateReactionRuleNegativeConflict(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusConflict, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }
@@ -158,7 +158,7 @@ func testCreateReactionRuleNegativeIncompatible(t *testing.T) {
 		{
 			EmojiName:  "🤰",
 			EmojiId:    "asdsad",
-			RuleAuthor: "J3nxJ5WHIoHJinXjSX",
+			RuleAuthor: "J3nxJ5WHIoHJinXjINC",
 			GuildId:    "QaK6KDIezh0ckrQhysh",
 			Action:     rule.Delete,
 		},
@@ -167,18 +167,18 @@ func testCreateReactionRuleNegativeIncompatible(t *testing.T) {
 	mockReactionService.On("CreateReactionRules", &sendedBody).Return(nil, rule.ErrRuleReactionIncompatible)
 
 	var byf bytes.Buffer
-	json.NewEncoder(&byf).Encode(expectedResponse)
+	json.NewEncoder(&byf).Encode(sendedBody)
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/rules/reaction", &byf)
+	req := httptest.NewRequest("POST", "/rules/reaction/", &byf)
 	r.ServeHTTP(rr, req)
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusConflict, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }
@@ -208,10 +208,10 @@ func testCreateReactionRuleNegativeBadRequest(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }

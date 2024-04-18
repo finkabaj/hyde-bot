@@ -46,7 +46,26 @@ func ValidateJson[T any]() func(http.Handler) http.Handler {
 				return
 			}
 
-			if err := validate.Struct(v); err != nil {
+			// XXX  maybe need to update in future.
+			isSlice := reflect.TypeOf(v).Kind() == reflect.Slice
+
+			var err error
+
+			if isSlice {
+				err = validate.Var(v, "required,dive")
+			} else {
+				err = validate.Struct(v)
+			}
+
+			if err != nil {
+				if _, ok := err.(*validator.InvalidValidationError); ok {
+					// if you see this error that means that it's time to correct validate_json implementation (or you fucked up json)
+					common.NewErrorResponseBuilder(common.ErrInternal).
+						SetStatus(http.StatusInternalServerError).
+						SetMessage("incorrect json type for validation").
+						Send(w)
+					return
+				}
 				validationErrors := make(map[string]string)
 				for _, e := range err.(validator.ValidationErrors) {
 					validationErrors[e.Field()] = e.Tag()
@@ -60,7 +79,7 @@ func ValidateJson[T any]() func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), "json", v)
+			ctx := context.WithValue(r.Context(), ValidateJsonCtxKey, v)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

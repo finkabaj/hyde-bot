@@ -17,10 +17,10 @@ const (
 )
 
 type ReactionRule struct {
-	EmojiName  string      `json:"emojiName,omitempty"`
-	EmojiId    string      `json:"emojiId,omitempty"`
-	GuildId    string      `json:"guildId" validate:"required,len=19"`
-	RuleAuthor string      `json:"ruleAuthor" validate:"required,min=17,max=18"`
+	EmojiName  string      `json:"emojiName,omitempty" validate:"omitempty"`
+	EmojiId    string      `json:"emojiId,omitempty" validate:"omitempty"`
+	GuildId    string      `json:"guildId" validate:"required"`
+	RuleAuthor string      `json:"ruleAuthor" validate:"required"`
 	Action     ReactAction `json:"action" validate:"number"`
 }
 

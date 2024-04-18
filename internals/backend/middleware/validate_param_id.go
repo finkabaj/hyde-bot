@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/finkabaj/hyde-bot/internals/utils/common"
@@ -13,8 +12,6 @@ func ValidateParamId(rule string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := chi.URLParam(r, "id")
-
-			fmt.Println(id)
 
 			if id == "" {
 				common.NewErrorResponseBuilder(common.ErrBadRequest).
