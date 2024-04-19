@@ -130,9 +130,21 @@ func (rc *RulesController) deleteReactions(w http.ResponseWriter, r *http.Reques
 	err := rc.reactionService.DeleteReactionRules(&query, gId)
 
 	switch {
-	case err != nil:
+	case err == common.ErrNotFound:
+		common.SendNotFoundError(w, "no rules found for the guild")
 		return
-
+	case err == common.ErrInternal:
+		common.SendInternalError(w)
+		return
+	case err == rule.ErrRuleReactionIncompatible:
+		common.NewErrorResponseBuilder(err).
+			SetMessage("either emoji name or emoji id must be provided").
+			SetStatus(http.StatusConflict).
+			Send(w)
+		return
+	case err == common.ErrBadRequest:
+		common.SendBadRequestError(w, "invalid request query")
+		return
 	}
 
 	ruleWord := "rule"

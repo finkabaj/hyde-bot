@@ -39,10 +39,10 @@ func TestGetReactionsRules(t *testing.T) {
 
 func TestDeleteReactionRules(t *testing.T) {
 	t.Run("Positive", testDeleteReactionRulesPositive)
-	//t.Run("NegativeNotFound", testDeleteReactionRulesNotFound)
-	//t.Run("NegativeInternalError", testDeleteReactionRulesInternalError)
-	//t.Run("NegativeIncompatible", testDeleteReactionRulesIncompatible)
-	//t.Run("BadRequest", testDeleteReactionRulesBadRequest)
+	t.Run("NegativeNotFound", testDeleteReactionRulesNotFound)
+	t.Run("NegativeInternalError", testDeleteReactionRulesInternalError)
+	t.Run("NegativeIncompatible", testDeleteReactionRulesIncompatible)
+	t.Run("BadRequest", testDeleteReactionRulesBadRequest)
 }
 
 func testCreateReactionRulePositive(t *testing.T) {
@@ -361,7 +361,7 @@ func testDeleteReactionRulesNotFound(t *testing.T) {
 		Get()
 	query := []rule.DeleteReactionRuleQuery{
 		{
-			EmojiName: "🤰",
+			EmojiName: "f",
 		},
 	}
 	gId := "QaK6KDIezh0ckrQnF"
@@ -376,10 +376,10 @@ func testDeleteReactionRulesNotFound(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusNotFound, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }
@@ -405,10 +405,10 @@ func testDeleteReactionRulesInternalError(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }
@@ -436,10 +436,10 @@ func testDeleteReactionRulesIncompatible(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusConflict, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }
@@ -466,10 +466,10 @@ func testDeleteReactionRulesBadRequest(t *testing.T) {
 	defer rr.Result().Body.Close()
 
 	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, actualResponse)
+	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Equal(t, expectedResponse, actualResponse)
+	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
 }

@@ -93,3 +93,12 @@ func SendInternalError(w http.ResponseWriter, m ...string) {
 	}
 	b.Send(w)
 }
+
+func SendNotFoundError(w http.ResponseWriter, m ...string) {
+	b := NewErrorResponseBuilder(ErrNotFound).
+		SetStatus(http.StatusNotFound)
+	if len(m) == 1 {
+		b.SetMessage(m[0])
+	}
+	b.Send(w)
+}
