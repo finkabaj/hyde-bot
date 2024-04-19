@@ -17,9 +17,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockService *mogs.MockEventsService = mogs.NewMockEventsService()
+var mockEventsService *mogs.MockEventsService = mogs.NewMockEventsService()
 var r *chi.Mux = chi.NewRouter()
-var ec *EventsController = NewEventsController(mockService, mogs.NewMockLogger())
+var ec *EventsController = NewEventsController(mockEventsService, mogs.NewMockLogger())
 
 func init() {
 	ec.RegisterRoutes(r)
@@ -46,11 +46,12 @@ func testGetGuildPositive(t *testing.T) {
 		OwnerId: "positive",
 	}
 
-	mockService.On("GetGuild", gId).Return(&expectedResponse, nil)
+	mockEventsService.On("GetGuild", gId).Return(&expectedResponse, nil)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose guild.Guild
 	common.UnmarshalBody(rr.Result().Body, &actualRespose)
@@ -58,21 +59,22 @@ func testGetGuildPositive(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
 
-	mockService.AssertExpectations(t)
+	mockEventsService.AssertExpectations(t)
 }
 
 func testGetGuildNegativeNotFound(t *testing.T) {
 	gId := "negativeNotFound"
-	expectedResponse := common.NewErrorResponseBuilder(guild.ErrGuildNotFound).
+	expectedResponse := common.NewErrorResponseBuilder(common.ErrNotFound).
 		SetStatus(http.StatusNotFound).
 		SetMessage(fmt.Sprintf("No guild with id: %s found", gId)).
 		Get()
 
-	mockService.On("GetGuild", gId).Return(nil, nil)
+	mockEventsService.On("GetGuild", gId).Return(nil, nil)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -82,7 +84,7 @@ func testGetGuildNegativeNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
 
-	mockService.AssertExpectations(t)
+	mockEventsService.AssertExpectations(t)
 }
 
 func testGetGuildNegativeInternalError(t *testing.T) {
@@ -92,11 +94,12 @@ func testGetGuildNegativeInternalError(t *testing.T) {
 		SetStatus(http.StatusInternalServerError).
 		Get()
 
-	mockService.On("GetGuild", gId).Return(nil, expectedError)
+	mockEventsService.On("GetGuild", gId).Return(nil, expectedError)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -106,7 +109,7 @@ func testGetGuildNegativeInternalError(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
 
-	mockService.AssertExpectations(t)
+	mockEventsService.AssertExpectations(t)
 }
 
 func testGetGuildNegativeWtf(t *testing.T) {
@@ -116,7 +119,7 @@ func testGetGuildNegativeWtf(t *testing.T) {
 		SetStatus(http.StatusInternalServerError).
 		Get()
 
-	mockService.On("GetGuild", gId).Return(&guild.Guild{
+	mockEventsService.On("GetGuild", gId).Return(&guild.Guild{
 		GuildId: "posi vibes",
 		OwnerId: "spinnu~",
 	}, expectedError)
@@ -124,6 +127,7 @@ func testGetGuildNegativeWtf(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/guild/%s", gId), nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -133,7 +137,7 @@ func testGetGuildNegativeWtf(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
 
-	mockService.AssertExpectations(t)
+	mockEventsService.AssertExpectations(t)
 }
 
 func testCreateGuildPositive(t *testing.T) {
@@ -142,7 +146,7 @@ func testCreateGuildPositive(t *testing.T) {
 		OwnerId: "J3nxJ5WHIoHJinXjSX",
 	}
 
-	mockService.On("CreateGuild", &guild.GuildCreate{GuildId: "QaK6KDIezh0ckrQhySh", OwnerId: "J3nxJ5WHIoHJinXjSX"}).Return(&expectedResponse, nil)
+	mockEventsService.On("CreateGuild", &guild.GuildCreate{GuildId: "QaK6KDIezh0ckrQhySh", OwnerId: "J3nxJ5WHIoHJinXjSX"}).Return(&expectedResponse, nil)
 
 	var byf bytes.Buffer
 	json.NewEncoder(&byf).Encode(expectedResponse)
@@ -150,6 +154,7 @@ func testCreateGuildPositive(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/guild", &byf)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose guild.Guild
 	common.UnmarshalBody(rr.Result().Body, &actualRespose)
@@ -157,7 +162,7 @@ func testCreateGuildPositive(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
 
-	mockService.AssertExpectations(t)
+	mockEventsService.AssertExpectations(t)
 }
 
 func testCreateGuildNegativeValidationNil(t *testing.T) {
@@ -169,6 +174,7 @@ func testCreateGuildNegativeValidationNil(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/guild", nil)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -182,7 +188,7 @@ func testCreateGuildNegativeValidationNil(t *testing.T) {
 func testCreateGuildNegativeValidation(t *testing.T) {
 	expectedResponse := common.NewErrorResponseBuilder(common.ErrValidation).
 		SetStatus(http.StatusBadRequest).
-		SetValidationFields(map[string]string{"guildId": "required", "ownerId": "min"}).
+		SetValidationFields(map[string]string{"guildId": "required"}).
 		Get()
 	sendedBody := guild.GuildCreate{OwnerId: "ass"}
 
@@ -193,6 +199,7 @@ func testCreateGuildNegativeValidation(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/guild", &byf)
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
@@ -202,12 +209,12 @@ func testCreateGuildNegativeValidation(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
 
-	mockService.AssertExpectations(t)
+	mockEventsService.AssertExpectations(t)
 }
 
 func testCreateGuildNegativeConflict(t *testing.T) {
 	expectedResponse := common.NewErrorResponseBuilder(guild.ErrGuildConflict).
-		SetStatus(http.StatusBadRequest).
+		SetStatus(http.StatusConflict).
 		SetMessage("Guild with id: SAS6KDIezh0ckrQhySh already exists").
 		Get()
 
@@ -218,17 +225,18 @@ func testCreateGuildNegativeConflict(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/guild", &byf)
 
-	mockService.On("CreateGuild", &sendedBody).Return(nil, guild.ErrGuildConflict)
+	mockEventsService.On("CreateGuild", &sendedBody).Return(nil, guild.ErrGuildConflict)
 
 	r.ServeHTTP(rr, req)
+	defer rr.Result().Body.Close()
 
 	var actualRespose *common.ErrorResponse
 	if err := common.UnmarshalBody(rr.Result().Body, &actualRespose); err != nil {
 		fmt.Println(err)
 	}
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, http.StatusConflict, rr.Code)
 	assert.Equal(t, expectedResponse, actualRespose)
 
-	mockService.AssertExpectations(t)
+	mockEventsService.AssertExpectations(t)
 }

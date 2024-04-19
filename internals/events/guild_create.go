@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 
@@ -17,8 +18,7 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 	typedEvent, ok := event.(*discordgo.GuildCreate)
 
 	if !ok {
-		err := errors.New("Incorect type in HandleGuildCreate")
-		logger.Warn(err)
+		logger.Warn(errors.New("Incorect type in HandleGuildCreate"))
 		return
 	}
 
@@ -31,9 +31,10 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 
 	if err != nil {
 		logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
+		return
 	}
 
-	url := "http://" + os.Getenv("API_HOST") + ":" + os.Getenv("API_PORT") + "/guild"
+	url := common.GetApiUrl(os.Getenv("API_HOST"), os.Getenv("API_PORT"), "/guild")
 
 	bodyReader := bytes.NewReader(jsonInfo)
 	res, err := http.Post(url, "application/json", bodyReader)
@@ -45,8 +46,27 @@ func HandleGuildCreate(s *discordgo.Session, event interface{}) {
 
 	body := res.Body
 	defer body.Close()
+	b, err := io.ReadAll(body)
 
-	var result *guild.GuildCreate
+	if err != nil {
+		logger.Fatal(err, logger.LogFields{"MESSAGE": "The bot cannot continue to work correctly", "AT": "guild_create"})
+	}
 
-	common.UnmarshalBody(body, &result)
+	var result guild.Guild
+
+	if err := common.UnmarshalBodyBytes(b, &result); err != nil {
+		logger.Error(errors.New("Error while unmarshaling guild create"))
+	}
+
+	if result.GuildId != "" && result.OwnerId != "" {
+		return
+	}
+
+	var errRes common.ErrorResponse
+
+	if err := common.UnmarshalBodyBytes(b, &errRes); err != nil {
+		logger.Error(errors.New("Error while unmarshaling guild create error"))
+	}
+
+	logger.Error(errors.New(errRes.Error), logger.ToLogFields(errRes.ValidationErrors))
 }

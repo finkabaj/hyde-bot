@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/finkabaj/hyde-bot/internals/backend/controllers"
+	mogs "github.com/finkabaj/hyde-bot/internals/backend/mocks"
 	"github.com/finkabaj/hyde-bot/internals/backend/services"
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/db/postgresql"
@@ -65,6 +66,10 @@ func main() {
 	eventService := services.NewEventsService(database)
 	eventsController := controllers.NewEventsController(eventService, logger)
 	eventsController.RegisterRoutes(r)
+
+	reactionService := mogs.NewMockReactionService()
+	rulesController := controllers.NewRulesController(reactionService, logger)
+	rulesController.RegisterRoutes(r)
 
 	host := os.Getenv("API_HOST")
 	port := os.Getenv("API_PORT")

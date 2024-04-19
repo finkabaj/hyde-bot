@@ -125,3 +125,25 @@ func Info(message string, fields ...LogFields) {
 func Debug(message string, fields ...LogFields) {
 	logger.Debug(message, fields...)
 }
+
+func ToLogFields[T map[string]string | map[string]interface{}](fields T) LogFields {
+	if fields == nil {
+		return LogFields{}
+	}
+
+	af := any(fields)
+
+	if asf, ok := af.(map[string]interface{}); ok {
+		return LogFields(asf)
+	}
+
+	afm := af.(map[string]string)
+
+	afmRes := make(LogFields, len(afm))
+
+	for dick, ass := range afm {
+		afmRes[dick] = ass
+	}
+
+	return afmRes
+}
