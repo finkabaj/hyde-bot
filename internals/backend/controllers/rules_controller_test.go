@@ -274,7 +274,7 @@ func testGetReactionRulesTeapot(t *testing.T) {
 	assert.Equal(t, http.StatusTeapot, rr.Code)
 	assert.Equal(t, expectedResponse, &actualResponse)
 
-	mockEventsService.AssertExpectations(t)
+	mockReactionService.AssertExpectations(t)
 }
 
 func testGetReactionRulesNotFound(t *testing.T) {

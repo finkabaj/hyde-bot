@@ -7,6 +7,7 @@ import (
 
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/utils/common"
 	"github.com/finkabaj/hyde-bot/internals/utils/guild"
 
 	"github.com/jackc/pgx/v5"
@@ -14,7 +15,8 @@ import (
 )
 
 type Postgresql struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger logger.ILogger
 }
 
 func (p *Postgresql) setup() (err error) {
@@ -104,7 +106,7 @@ func (p *Postgresql) Status() (err error) {
 	return
 }
 
-func (p *Postgresql) CreateGuild(gc *guild.GuildCreate) (*guild.Guild, error) {
+func (p *Postgresql) CreateGuild(gc guild.GuildCreate) (guild.Guild, error) {
 	query := `
     INSERT INTO guilds ("guildId", "ownerId") 
     VALUES ($1, $2) 
@@ -117,21 +119,21 @@ func (p *Postgresql) CreateGuild(gc *guild.GuildCreate) (*guild.Guild, error) {
 	defer row.Close()
 
 	if err != nil {
-		return nil, err
+		p.logger.Warn(err, logger.LogFields{"message": "error in CreateGuild query"})
+		return guild.Guild{}, common.ErrInternal
 	}
 
 	newGuild, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[guild.Guild])
 
-	if err == pgx.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
+	if err != nil {
+		logger.Error(err, logger.LogFields{"message": "error when collecting rows in CreateGuild"})
+		return guild.Guild{}, common.ErrInternal
 	}
 
-	return &newGuild, nil
+	return newGuild, nil
 }
 
-func (p *Postgresql) GetGuild(guildId string) (*guild.Guild, error) {
+func (p *Postgresql) GetGuild(guildId string) (guild.Guild, error) {
 	query := `
     SELECT * FROM guilds WHERE "guildId" = $1
   `
@@ -142,16 +144,18 @@ func (p *Postgresql) GetGuild(guildId string) (*guild.Guild, error) {
 	defer row.Close()
 
 	if err != nil {
-		return nil, err
+		logger.Error(err, logger.LogFields{"message": "error in GetGuild query"})
+		return guild.Guild{}, common.ErrInternal
 	}
 
 	foundGuild, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[guild.Guild])
 
 	if err == pgx.ErrNoRows {
-		return nil, nil
+		return guild.Guild{}, common.ErrNotFound
 	} else if err != nil {
-		return nil, err
+		logger.Error(err, logger.LogFields{"message": "error while collecting rows in GetGuild"})
+		return guild.Guild{}, common.ErrInternal
 	}
 
-	return &foundGuild, nil
+	return foundGuild, nil
 }

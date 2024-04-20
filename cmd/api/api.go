@@ -63,9 +63,9 @@ func main() {
 	commandsController := controllers.NewCommandsController(&database)
 	commandsController.RegisterRoutes(r)
 
-	eventService := services.NewEventsService(database)
-	eventsController := controllers.NewEventsController(eventService, logger)
-	eventsController.RegisterRoutes(r)
+	guildService := services.NewGuildService(database)
+	guildController := controllers.NewGuildController(guildService, logger)
+	guildController.RegisterRoutes(r)
 
 	reactionService := mogs.NewMockReactionService()
 	rulesController := controllers.NewRulesController(reactionService, logger)
