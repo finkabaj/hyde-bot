@@ -5,7 +5,6 @@ import "errors"
 type GuildCreate struct {
 	GuildId string `json:"guildId,inline" validate:"required"`
 	OwnerId string `json:"ownerId,inline" validate:"required"`
-	//Icon    string `json:"icon"`
 }
 
 type Guild struct {
