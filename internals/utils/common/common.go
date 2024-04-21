@@ -75,3 +75,82 @@ func ValidateSliceOrStruct(w http.ResponseWriter, validate *validator.Validate, 
 
 	return
 }
+
+func EveryFieldValueContains[T any](arr []T, fieldName string, fieldValue interface{}) bool {
+	for _, item := range arr {
+		v := reflect.ValueOf(item)
+		if v.Kind() != reflect.Struct {
+			return false
+		}
+
+		field := v.FieldByName(fieldName)
+		if !field.IsValid() {
+			return false
+		}
+
+		if field.Interface() != fieldValue {
+			return false
+		}
+	}
+	return true
+}
+
+// Only checks exported fields
+func ContainsFieldValue[T any](arr []T, fieldName string, fieldValue interface{}) bool {
+	for _, item := range arr {
+		v := reflect.ValueOf(item)
+		if v.Kind() != reflect.Struct {
+			return false
+		}
+
+		field := v.FieldByName(fieldName)
+
+		if !field.IsValid() {
+			return false
+		}
+
+		if field.Interface() == fieldValue {
+			return true
+		}
+	}
+	return false
+}
+
+func DestructureStructSlice(slice interface{}) [][]any {
+	val := reflect.ValueOf(slice)
+	if val.Kind() != reflect.Slice {
+		panic("Input must be a slice")
+	}
+
+	result := make([][]any, val.Len())
+
+	for i := 0; i < val.Len(); i++ {
+		structVal := val.Index(i)
+		if structVal.Kind() != reflect.Struct {
+			panic("Slice elements must be structs")
+		}
+
+		fields := make([]any, structVal.NumField())
+		for j := 0; j < structVal.NumField(); j++ {
+			fields[j] = structVal.Field(j).Interface()
+		}
+
+		result[i] = fields
+	}
+
+	return result
+}
+
+func RemoveDuplicates[T comparable](slice []T) []T {
+	seen := make(map[T]bool)
+	result := []T{}
+
+	for _, val := range slice {
+		if !seen[val] {
+			seen[val] = true
+			result = append(result, val)
+		}
+	}
+
+	return result
+}

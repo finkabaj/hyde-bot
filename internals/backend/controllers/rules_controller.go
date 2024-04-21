@@ -65,7 +65,7 @@ func (rc *RulesController) getReactions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := common.MarshalBody(w, http.StatusOK, rules); err != nil {
+	if err := common.MarshalBody(w, http.StatusOK, &rules); err != nil {
 		rc.logger.Error(err, logger.LogFields{"message": "Error while marhsaling getReactionsRules response"})
 		common.NewErrorResponseBuilder(common.ErrInternal).
 			SetMessage("Internal server error").
@@ -86,7 +86,7 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	newRules, err := rc.reactionService.CreateReactionRules(&rRules)
+	newRules, err := rc.reactionService.CreateReactionRules(rRules)
 
 	switch {
 	case err == common.ErrInternal:
@@ -112,9 +112,12 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 			SetMessage("invalid request body").
 			Send(w)
 		return
+	case err == common.ErrNotFound:
+		common.SendNotFoundError(w, "provided guild not found")
+		return
 	}
 
-	if err := common.MarshalBody(w, http.StatusCreated, newRules); err != nil {
+	if err := common.MarshalBody(w, http.StatusCreated, &newRules); err != nil {
 		rc.logger.Error(common.ErrInternal, logger.LogFields{"message": "error while marshaling postReactions"})
 		common.NewErrorResponseBuilder(err).
 			SetMessage("Error while marshing response").
@@ -127,7 +130,7 @@ func (rc *RulesController) deleteReactions(w http.ResponseWriter, r *http.Reques
 	gId := chi.URLParam(r, "id")
 	query := r.Context().Value(middleware.ValidateQueryCtxKey).([]rule.DeleteReactionRuleQuery)
 
-	err := rc.reactionService.DeleteReactionRules(&query, gId)
+	err := rc.reactionService.DeleteReactionRules(query, gId)
 
 	switch {
 	case err == common.ErrNotFound:

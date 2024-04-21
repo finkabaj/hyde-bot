@@ -1,6 +1,7 @@
 package events
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
