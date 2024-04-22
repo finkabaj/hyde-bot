@@ -158,7 +158,7 @@ func (p *Postgresql) CreateGuild(gc guild.GuildCreate) (guild.Guild, error) {
 	return newGuild, nil
 }
 
-func (p *Postgresql) GetGuild(guildId string) (guild.Guild, error) {
+func (p *Postgresql) ReadGuild(guildId string) (guild.Guild, error) {
 	query := `
     SELECT * FROM guilds WHERE "guildId" = $1
   `
@@ -230,7 +230,7 @@ func (p *Postgresql) DeleteReactionRules(ids []string) error {
 	return nil
 }
 
-func (p *Postgresql) GetReactionRules(gId string) ([]rule.ReactionRule, error) {
+func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) {
 	query := `
     SELECT * FROM "reactionRules" WHERE "guildId" = $1
   `

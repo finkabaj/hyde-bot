@@ -40,7 +40,7 @@ func (e *GuildService) CreateGuild(g guild.GuildCreate) (guild.Guild, error) {
 }
 
 func (e *GuildService) GetGuild(gId string) (guild.Guild, error) {
-	guild, err := e.database.GetGuild(gId)
+	guild, err := e.database.ReadGuild(gId)
 
 	return guild, err
 }

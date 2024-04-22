@@ -83,13 +83,13 @@ func (rs *ReactionService) CreateReactionRules(rules []rule.ReactionRule) ([]rul
 }
 
 func (rs *ReactionService) GetReactionRules(gId string) ([]rule.ReactionRule, error) {
-	g, err := rs.guildService.GetGuild(gId)
+	_, err := rs.guildService.GetGuild(gId)
 
 	if err != nil {
 		return []rule.ReactionRule{}, err
 	}
 
-	rRules, err := rs.database.GetReactionRules(g.GuildId)
+	rRules, err := rs.database.ReadReactionRules(gId)
 
 	if err != nil {
 		return []rule.ReactionRule{}, err

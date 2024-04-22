@@ -13,7 +13,7 @@ type Database interface {
 	//* GUILDS *//
 
 	CreateGuild(guild guild.GuildCreate) (guild.Guild, error)
-	GetGuild(guildId string) (guild.Guild, error)
+	ReadGuild(guildId string) (guild.Guild, error)
 
 	// * RULES * //
 
@@ -21,7 +21,7 @@ type Database interface {
 
 	CreateReactionRules(rules []rule.ReactionRule) ([]rule.ReactionRule, error)
 	DeleteReactionRules(ids []string) error
-	GetReactionRules(gId string) ([]rule.ReactionRule, error)
+	ReadReactionRules(gId string) ([]rule.ReactionRule, error)
 }
 
 type DatabaseCredentials struct {
