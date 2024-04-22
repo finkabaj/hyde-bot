@@ -99,5 +99,31 @@ func (rs *ReactionService) GetReactionRules(gId string) ([]rule.ReactionRule, er
 }
 
 func (rs *ReactionService) DeleteReactionRules(query []rule.DeleteReactionRuleQuery, gId string) error {
+	if len(query) < 1 {
+		return common.ErrBadRequest
+	}
+
+	_, err := rs.guildService.GetGuild(gId)
+
+	if err != nil {
+		return err
+	}
+
+	for _, r := range query {
+		if r.EmojiId == "" && r.EmojiName == "" {
+			return common.ErrBadRequest
+		}
+
+		if r.EmojiId != "" && r.EmojiName != "" {
+			return rule.ErrRuleReactionIncompatible
+		}
+	}
+
+	err = rs.database.DeleteReactionRules(query, gId)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

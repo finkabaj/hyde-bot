@@ -34,6 +34,10 @@ func TestCreateReactionRules(t *testing.T) {
 	t.Run("DbReturnError", testCreateReactionRulesDbReturnError)
 }
 
+func TestDeleteReactionRules(t *testing.T) {
+
+}
+
 func testGetReactionRulesPositive(t *testing.T) {
 	gId := "123131421"
 	guild := guild.Guild{

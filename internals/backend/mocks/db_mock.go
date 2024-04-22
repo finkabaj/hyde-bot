@@ -44,8 +44,8 @@ func (m *DbMock) CreateReactionRules(rules []rule.ReactionRule) ([]rule.Reaction
 	return args.Get(0).([]rule.ReactionRule), args.Error(1)
 }
 
-func (m *DbMock) DeleteReactionRules(ids []string) error {
-	args := m.Called(ids)
+func (m *DbMock) DeleteReactionRules(rules []rule.DeleteReactionRuleQuery, gId string) error {
+	args := m.Called(rules, gId)
 	return args.Error(0)
 }
 

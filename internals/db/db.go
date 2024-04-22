@@ -20,7 +20,7 @@ type Database interface {
 	/// ** REACTIONS ** ///
 
 	CreateReactionRules(rules []rule.ReactionRule) ([]rule.ReactionRule, error)
-	DeleteReactionRules(ids []string) error
+	DeleteReactionRules(rules []rule.DeleteReactionRuleQuery, gId string) error
 	ReadReactionRules(gId string) ([]rule.ReactionRule, error)
 }
 
