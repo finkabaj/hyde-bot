@@ -21,7 +21,7 @@ type ReactionService struct {
 
 var reactionService *ReactionService
 
-func NewReactionService(l logger.ILogger, d db.Database, g IGuildService) IReactionService {
+func NewReactionService(l logger.ILogger, d db.Database, g IGuildService) *ReactionService {
 	if reactionService == nil {
 		reactionService = &ReactionService{
 			logger:       l,

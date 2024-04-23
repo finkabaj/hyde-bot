@@ -1,7 +1,6 @@
 package events
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,22 +14,22 @@ type Event struct {
 	GuildID string
 }
 
-type eventManager struct {
+type EventManager struct {
 	Events map[string]map[string]*Event // Events[type][guildID] = event
 }
 
-var em *eventManager
+var em *EventManager
 
-func NewEventManager() *eventManager {
+func NewEventManager() *EventManager {
 	if em == nil {
-		return &eventManager{
+		return &EventManager{
 			Events: make(map[string]map[string]*Event),
 		}
 	}
 	return em
 }
 
-func (em *eventManager) RegisterDefaultEvents() {
+func (em *EventManager) RegisterDefaultEvents() {
 	var guildID string = ""
 
 	if os.Getenv("ENV") == "development" {
@@ -44,7 +43,7 @@ func (em *eventManager) RegisterDefaultEvents() {
 
 // RegisterEventHandler registers an event handler for a specific guild.
 // If guildID is empty, the event handler will be registered globally.
-func (em *eventManager) RegisterEventHandler(eventType string, handler EventHandler, guildID string) {
+func (em *EventManager) RegisterEventHandler(eventType string, handler EventHandler, guildID string) {
 	event := &Event{
 		Type:    eventType,
 		Handler: handler,
@@ -60,7 +59,7 @@ func (em *eventManager) RegisterEventHandler(eventType string, handler EventHand
 
 // RemoveEventHandler removes an event handler for a specific guild.
 // If guildID is empty, it will remove the global event handler.
-func (em *eventManager) RemoveEventHandler(eventType string, handler EventHandler, guildID string) {
+func (em *EventManager) RemoveEventHandler(eventType string, handler EventHandler, guildID string) {
 	if _, ok := em.Events[eventType]; ok {
 		delete(em.Events[eventType], guildID)
 		if len(em.Events[eventType]) == 0 {
@@ -70,7 +69,7 @@ func (em *eventManager) RemoveEventHandler(eventType string, handler EventHandle
 }
 
 // HandleEvent handles an incoming event by calling the appropriate event handlers.
-func (em *eventManager) HandleEvent(s *discordgo.Session, event interface{}) {
+func (em *EventManager) HandleEvent(s *discordgo.Session, event interface{}) {
 	eventType := getEventType(event)
 	guildID := getGuildID(event)
 
