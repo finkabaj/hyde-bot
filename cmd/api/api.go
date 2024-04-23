@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/finkabaj/hyde-bot/internals/backend/controllers"
-	mogs "github.com/finkabaj/hyde-bot/internals/backend/mocks"
 	"github.com/finkabaj/hyde-bot/internals/backend/services"
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/db/postgresql"
@@ -41,7 +40,7 @@ func main() {
 		r.Use(middleware.Recoverer)
 	}
 
-	var database db.Database = &postgresql.Postgresql{}
+	var database db.Database = postgresql.NewPostgresql(logger)
 	defer database.Close()
 
 	credentials := db.DatabaseCredentials{
@@ -67,7 +66,7 @@ func main() {
 	guildController := controllers.NewGuildController(guildService, logger)
 	guildController.RegisterRoutes(r)
 
-	reactionService := mogs.NewMockReactionService()
+	reactionService := services.NewReactionService(logger, database, guildService)
 	rulesController := controllers.NewRulesController(reactionService, logger)
 	rulesController.RegisterRoutes(r)
 

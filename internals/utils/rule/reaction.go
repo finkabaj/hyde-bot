@@ -17,11 +17,11 @@ const (
 )
 
 type ReactionRule struct {
-	EmojiName  string      `json:"emojiName,omitempty" validate:"omitempty"`
-	EmojiId    string      `json:"emojiId,omitempty" validate:"omitempty"`
-	GuildId    string      `json:"guildId" validate:"required"`
-	RuleAuthor string      `json:"ruleAuthor" validate:"required"`
-	Action     ReactAction `json:"action" validate:"number"`
+	EmojiName  string        `json:"emojiName,omitempty" validate:"omitempty"`
+	EmojiId    string        `json:"emojiId,omitempty" validate:"omitempty"`
+	GuildId    string        `json:"guildId" validate:"required"`
+	RuleAuthor string        `json:"ruleAuthor" validate:"required"`
+	Actions    []ReactAction `json:"actions" validate:"dive"`
 }
 
 type DeleteReactionRuleQuery struct {

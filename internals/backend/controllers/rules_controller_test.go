@@ -51,23 +51,23 @@ func testCreateReactionRulePositive(t *testing.T) {
 			EmojiName:  "🤰",
 			RuleAuthor: "J3nxJ5WHIoHJinXjSX",
 			GuildId:    "QaK6KDIezh0ckrQhySh",
-			Action:     rule.Delete,
+			Actions:    []rule.ReactAction{rule.Delete, rule.Ban},
 		},
 		{
 			EmojiName:  "💦",
 			RuleAuthor: "J3nxJ5WHIoHJinXjSD",
 			GuildId:    "QaK6KDIezh0ckrQhyS",
-			Action:     rule.Ban,
+			Actions:    []rule.ReactAction{rule.Ban},
 		},
 		{
 			EmojiId:    "12321",
 			RuleAuthor: "QaK6KDIezh0ckrQhyShD",
 			GuildId:    "QaK6KDIezh0ckrQhyS",
-			Action:     rule.Kick,
+			Actions:    []rule.ReactAction{rule.Kick},
 		},
 	}
 
-	mockReactionService.On("CreateReactionRules", &expectedResponse).Return(&expectedResponse, nil)
+	mockReactionService.On("CreateReactionRules", expectedResponse).Return(expectedResponse, nil)
 
 	var byf bytes.Buffer
 	json.NewEncoder(&byf).Encode(expectedResponse)
@@ -93,11 +93,11 @@ func testCreateReactionRuleNegativeInternalError(t *testing.T) {
 			EmojiName:  "🤰",
 			RuleAuthor: "J3nxJ5WHIoHJinXjIE",
 			GuildId:    "QaK6KDIezh0ckrQhy",
-			Action:     rule.Delete,
+			Actions:    []rule.ReactAction{rule.Ban},
 		},
 	}
 
-	mockReactionService.On("CreateReactionRules", &sendedBody).Return(nil, common.ErrInternal)
+	mockReactionService.On("CreateReactionRules", sendedBody).Return([]rule.ReactionRule{}, common.ErrInternal)
 
 	var byf bytes.Buffer
 	json.NewEncoder(&byf).Encode(sendedBody)
@@ -126,11 +126,11 @@ func testCreateReactionRuleNegativeConflict(t *testing.T) {
 			EmojiName:  "🤰",
 			RuleAuthor: "J3nxJ5WHIoHJinXjSX",
 			GuildId:    "QaK6KDIezh0ckrQhysh",
-			Action:     rule.Delete,
+			Actions:    []rule.ReactAction{rule.Ban},
 		},
 	}
 
-	mockReactionService.On("CreateReactionRules", &sendedBody).Return(nil, rule.ErrRuleReactionConflict)
+	mockReactionService.On("CreateReactionRules", sendedBody).Return([]rule.ReactionRule{}, rule.ErrRuleReactionConflict)
 
 	var byf bytes.Buffer
 	json.NewEncoder(&byf).Encode(sendedBody)
@@ -160,11 +160,11 @@ func testCreateReactionRuleNegativeIncompatible(t *testing.T) {
 			EmojiId:    "asdsad",
 			RuleAuthor: "J3nxJ5WHIoHJinXjINC",
 			GuildId:    "QaK6KDIezh0ckrQhysh",
-			Action:     rule.Delete,
+			Actions:    []rule.ReactAction{rule.Kick},
 		},
 	}
 
-	mockReactionService.On("CreateReactionRules", &sendedBody).Return(nil, rule.ErrRuleReactionIncompatible)
+	mockReactionService.On("CreateReactionRules", sendedBody).Return([]rule.ReactionRule{}, rule.ErrRuleReactionIncompatible)
 
 	var byf bytes.Buffer
 	json.NewEncoder(&byf).Encode(sendedBody)
@@ -193,11 +193,11 @@ func testCreateReactionRuleNegativeBadRequest(t *testing.T) {
 			EmojiName:  "🤰",
 			RuleAuthor: "J3nxJ5WHIoHJinXjxx",
 			GuildId:    "QaK6KDIezh0ckrQhyxx",
-			Action:     rule.Delete,
+			Actions:    []rule.ReactAction{rule.Ban},
 		},
 	}
 
-	mockReactionService.On("CreateReactionRules", &sendedBody).Return(nil, common.ErrBadRequest)
+	mockReactionService.On("CreateReactionRules", sendedBody).Return([]rule.ReactionRule{}, common.ErrBadRequest)
 
 	var byf bytes.Buffer
 	json.NewEncoder(&byf).Encode(sendedBody)
@@ -222,23 +222,23 @@ func testGetReactionRulesPositive(t *testing.T) {
 			EmojiName:  "🤰",
 			RuleAuthor: "J3nxJ5WHIoHJinXjSD",
 			GuildId:    "QaK6KDIezh0ckrQhy",
-			Action:     rule.Delete,
+			Actions:    []rule.ReactAction{rule.Ban},
 		},
 		{
 			EmojiName:  "💦",
 			RuleAuthor: "J3nxJ5WHIoHJinXjSD",
 			GuildId:    "QaK6KDIezh0ckrQhy",
-			Action:     rule.Ban,
+			Actions:    []rule.ReactAction{rule.Ban, rule.Kick},
 		},
 		{
 			EmojiId:    "12321",
 			RuleAuthor: "QaK6KDIezh0ckrQhyShD",
 			GuildId:    "QaK7KDIezh0ckrQhy",
-			Action:     rule.Kick,
+			Actions:    []rule.ReactAction{rule.Ban},
 		},
 	}
 
-	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQP8").Return(&expectedResponse, nil)
+	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQP8").Return(expectedResponse, nil)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/rules/reaction/QaK6KDIezh0ckrQP8", nil)
@@ -261,7 +261,7 @@ func testGetReactionRulesTeapot(t *testing.T) {
 		SetStatus(http.StatusTeapot).
 		Get()
 
-	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQTe").Return(nil, wtfErr)
+	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQTe").Return([]rule.ReactionRule{}, wtfErr)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/rules/reaction/QaK6KDIezh0ckrQTe", nil)
@@ -283,7 +283,7 @@ func testGetReactionRulesNotFound(t *testing.T) {
 		SetStatus(http.StatusNotFound).
 		Get()
 
-	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQB9").Return(nil, common.ErrNotFound)
+	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQB9").Return([]rule.ReactionRule{}, common.ErrNotFound)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/rules/reaction/QaK6KDIezh0ckrQB9", nil)
@@ -305,7 +305,7 @@ func testGetReactionRulesInternalError(t *testing.T) {
 		SetStatus(http.StatusInternalServerError).
 		Get()
 
-	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQIE").Return(nil, common.ErrInternal)
+	mockReactionService.On("GetReactionRules", "QaK6KDIezh0ckrQIE").Return([]rule.ReactionRule{}, common.ErrInternal)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/rules/reaction/QaK6KDIezh0ckrQIE", nil)
@@ -338,7 +338,7 @@ func testDeleteReactionRulesPositive(t *testing.T) {
 
 	encodedQuery := rule.EncodeDeleteReactQuery(query)
 
-	mockReactionService.On("DeleteReactionRules", &query, gId).Return(nil)
+	mockReactionService.On("DeleteReactionRules", query, gId).Return(nil)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/rules/reaction/%s?%s", gId, encodedQuery), nil)
@@ -368,7 +368,7 @@ func testDeleteReactionRulesNotFound(t *testing.T) {
 
 	encodedQuery := rule.EncodeDeleteReactQuery(query)
 
-	mockReactionService.On("DeleteReactionRules", &query, gId).Return(common.ErrNotFound)
+	mockReactionService.On("DeleteReactionRules", query, gId).Return(common.ErrNotFound)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/rules/reaction/%s?%s", gId, encodedQuery), nil)
@@ -397,7 +397,7 @@ func testDeleteReactionRulesInternalError(t *testing.T) {
 
 	encodedQuery := rule.EncodeDeleteReactQuery(query)
 
-	mockReactionService.On("DeleteReactionRules", &query, gId).Return(common.ErrInternal)
+	mockReactionService.On("DeleteReactionRules", query, gId).Return(common.ErrInternal)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/rules/reaction/%s?%s", gId, encodedQuery), nil)
@@ -428,7 +428,7 @@ func testDeleteReactionRulesIncompatible(t *testing.T) {
 
 	encodedQuery := rule.EncodeDeleteReactQuery(query)
 
-	mockReactionService.On("DeleteReactionRules", &query, gId).Return(rule.ErrRuleReactionIncompatible)
+	mockReactionService.On("DeleteReactionRules", query, gId).Return(rule.ErrRuleReactionIncompatible)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/rules/reaction/%s?%s", gId, encodedQuery), nil)
@@ -458,7 +458,7 @@ func testDeleteReactionRulesBadRequest(t *testing.T) {
 
 	encodedQuery := rule.EncodeDeleteReactQuery(query)
 
-	mockReactionService.On("DeleteReactionRules", &query, gId).Return(common.ErrBadRequest)
+	mockReactionService.On("DeleteReactionRules", query, gId).Return(common.ErrBadRequest)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/rules/reaction/%s?%s", gId, encodedQuery), nil)
