@@ -230,19 +230,16 @@ func (p *Postgresql) CreateReactionRules(rules []rule.ReactionRule) ([]rule.Reac
 func (p *Postgresql) DeleteReactionRules(rules []rule.DeleteReactionRuleQuery, gId string) error {
 	placeholder1 := make([]string, len(rules))
 	placeholder2 := make([]string, len(rules))
-	values := make([]any, len(rules)*2+1)
-	values[0] = gId
-	var lastIndex int
+	values := []any{gId}
 
 	for i := range placeholder1 {
 		placeholder1[i] = fmt.Sprintf("$%d", i+2)
-		values[i+1] = rules[i].EmojiId
-		lastIndex = i
+		values = append(values, rules[i].EmojiId)
 	}
 
 	for i := range placeholder2 {
 		placeholder2[i] = fmt.Sprintf("$%d", i+2+len(rules))
-		values[lastIndex+i+1] = rules[i].EmojiName
+		values = append(values, rules[i].EmojiName)
 	}
 
 	query := fmt.Sprintf(`
