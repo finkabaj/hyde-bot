@@ -60,7 +60,7 @@ func (cm *commandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCom
 	}
 
 	if _, ok := cm.Commands[cmd.Name][guildID]; ok {
-		logger.Warn(errors.New("Command already exists"), logger.LogFields{"command": cmd.Name, "guildID": guildID})
+		logger.Warn(errors.New("command already exists"), logger.LogFields{"command": cmd.Name, "guildID": guildID})
 		return
 	}
 
@@ -95,7 +95,7 @@ func (cm *commandManager) RegisterCommand(s *discordgo.Session, command *discord
 	c, ok := cm.Commands[cmd.Name][guildID]
 
 	if !ok {
-		err = errors.New("Command not found")
+		err = errors.New("command not found")
 		logger.Warn(err, logger.LogFields{"command": cmd.Name, "guildID": guildID})
 		return
 	}
@@ -117,7 +117,7 @@ func (cm *commandManager) DeleteCommand(s *discordgo.Session, command *discordgo
 	c, ok := cm.Commands[command.Name][guildID]
 
 	if !ok {
-		err = errors.New("Command not found")
+		err = errors.New("command not found")
 		logger.Warn(err, logger.LogFields{"command": command.Name, "guildID": guildID})
 		return
 	}

@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/finkabaj/hyde-bot/internals/rules"
 )
 
 type EventHandler func(s *discordgo.Session, event interface{})
@@ -15,14 +16,16 @@ type Event struct {
 }
 
 type EventManager struct {
+	rm     *rules.RuleManager
 	Events map[string]map[string]*Event // Events[type][guildID] = event
 }
 
 var em *EventManager
 
-func NewEventManager() *EventManager {
+func NewEventManager(rm *rules.RuleManager) *EventManager {
 	if em == nil {
 		return &EventManager{
+			rm:     rm,
 			Events: make(map[string]map[string]*Event),
 		}
 	}
@@ -38,7 +41,7 @@ func (em *EventManager) RegisterDefaultEvents() {
 
 	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction, guildID)
 	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate, guildID)
-	em.RegisterEventHandler("GuildCreate", HandleGuildCreate, "")
+	em.RegisterEventHandler("GuildCreate", HandleGuildCreate(em.rm), "")
 }
 
 // RegisterEventHandler registers an event handler for a specific guild.

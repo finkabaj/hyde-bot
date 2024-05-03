@@ -41,6 +41,12 @@ func MarshalBody(w http.ResponseWriter, status int, v any) (err error) {
 
 // Use this function if you have UnmarshalJSON method in your struct
 func UnmarshalBodyBytes(body []byte, v any) (err error) {
+	if string(body) == "[]" {
+		// If the JSON string is an empty array, set the target to an empty slice
+		reflect.ValueOf(v).Elem().Set(reflect.MakeSlice(reflect.TypeOf(v).Elem(), 0, 0))
+		return nil
+	}
+
 	err = json.Unmarshal(body, v)
 
 	return

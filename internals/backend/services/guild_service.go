@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/finkabaj/hyde-bot/internals/db"
+	"github.com/finkabaj/hyde-bot/internals/utils/common"
 	"github.com/finkabaj/hyde-bot/internals/utils/guild"
 )
 
@@ -28,7 +29,7 @@ func NewGuildService(d db.Database) *GuildService {
 }
 
 func (e *GuildService) CreateGuild(g guild.GuildCreate) (guild.Guild, error) {
-	if g, err := e.GetGuild(g.GuildId); err != nil {
+	if g, err := e.GetGuild(g.GuildId); err != nil && err != common.ErrNotFound {
 		return guild.Guild{}, err
 	} else if !reflect.DeepEqual(g, guild.Guild{}) {
 		return guild.Guild{}, guild.ErrGuildConflict

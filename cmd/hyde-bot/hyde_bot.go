@@ -10,6 +10,7 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/commands"
 	"github.com/finkabaj/hyde-bot/internals/events"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/rules"
 	"github.com/joho/godotenv"
 )
 
@@ -38,7 +39,9 @@ func init() {
 }
 
 func main() {
-	evtManager := events.NewEventManager()
+	rm := rules.NewRuleManager()
+
+	evtManager := events.NewEventManager(rm)
 
 	evtManager.RegisterDefaultEvents()
 
