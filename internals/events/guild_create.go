@@ -82,8 +82,6 @@ func HandleGuildCreate(rm *rules.RuleManager) func(s *discordgo.Session, event a
 			}
 
 			rm.AddRules(info.GuildId, rules)
-
-			logger.Info("Guild created", logger.LogFields{"guildId": info.GuildId})
 		}
 	}
 }

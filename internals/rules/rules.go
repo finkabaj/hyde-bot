@@ -2,6 +2,7 @@ package rules
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -29,6 +30,30 @@ func NewRuleManager() *RuleManager {
 
 func (rm *RuleManager) AddRules(guildId string, rules Rules) {
 	(*rm)[guildId] = rules
+}
+
+func (rm *RuleManager) GetRules(guildId string) (Rules, error) {
+	rules, ok := (*rm)[guildId]
+
+	if !ok {
+		return Rules{}, errors.New("rules not found")
+	}
+
+	return rules, nil
+}
+
+func (rm *RuleManager) GetReactionRules(guildId string) ([]rule.ReactionRule, error) {
+	rules, err := rm.GetRules(guildId)
+
+	if err != nil {
+		return nil, fmt.Errorf("error getting reaction rules: %w", err)
+	}
+
+	if !rules.HaveReactionRules {
+		return nil, errors.New("reaction rules not found")
+	}
+
+	return rules.ReactionRules, nil
 }
 
 func (rm *RuleManager) FetchReactionRules(guildId string) ([]rule.ReactionRule, error) {

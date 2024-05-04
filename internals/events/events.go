@@ -39,7 +39,7 @@ func (em *EventManager) RegisterDefaultEvents() {
 		guildID = os.Getenv("DEV_GUILD_ID")
 	}
 
-	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction, guildID)
+	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction(em.rm), guildID)
 	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate, guildID)
 	em.RegisterEventHandler("GuildCreate", HandleGuildCreate(em.rm), "")
 }

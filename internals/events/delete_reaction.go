@@ -5,21 +5,38 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/rules"
+	"github.com/finkabaj/hyde-bot/internals/utils/rule"
 )
 
-var prohibitedEmojies = []string{"🔥"}
+func HandleDeleteReaction(rm *rules.RuleManager) func(s *discordgo.Session, event any) {
+	return func(s *discordgo.Session, event any) {
+		typedEvent, ok := event.(*discordgo.MessageReactionAdd)
 
-func HandleDeleteReaction(s *discordgo.Session, event interface{}) {
-	typedEvent, ok := event.(*discordgo.MessageReactionAdd)
+		if !ok {
+			logger.Debug("Failed to cast event to *discordgo.MessageReactionAdd")
+			return
+		}
 
-	if !ok {
-		logger.Debug("Failed to cast event to *discordgo.MessageReactionAdd")
-		return
-	}
+		reactionRules, err := rm.GetReactionRules(typedEvent.GuildID)
 
-	contains := slices.Contains(prohibitedEmojies, typedEvent.Emoji.Name)
+		if err != nil {
+			logger.Debug("Failed to get reaction rules:" + err.Error())
+			return
+		}
 
-	if contains {
-		s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.Name)
+		if slices.ContainsFunc(reactionRules, func(rule rule.ReactionRule) bool {
+			return typedEvent.Emoji.ID != "" && rule.EmojiId == typedEvent.Emoji.ID
+		}) {
+			s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.ID)
+			return
+		}
+
+		if slices.ContainsFunc(reactionRules, func(rule rule.ReactionRule) bool {
+			return typedEvent.Emoji.Name != "" && rule.EmojiName == typedEvent.Emoji.Name
+		}) {
+			s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.Name)
+			return
+		}
 	}
 }
