@@ -2,9 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/commands"
@@ -27,6 +30,10 @@ func init() {
 	flag.Parse()
 	err = godotenv.Load()
 
+	fmt.Println(*RemoveCommands)
+
+	err = godotenv.Load(".env")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,19 +46,21 @@ func init() {
 }
 
 func main() {
-	rm := rules.NewRuleManager()
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 
-	evtManager := events.NewEventManager(rm)
+	rm := rules.NewRuleManager(client)
 
+	cmdManager := commands.NewCommandManager(rm)
+	cmdManager.RegisterDefaultCommandsToManager()
+
+	evtManager := events.NewEventManager(rm, cmdManager, client)
 	evtManager.RegisterDefaultEvents()
 
 	s.AddHandler(func(s *discordgo.Session, event interface{}) {
 		evtManager.HandleEvent(s, event)
 	})
-
-	cmdManager := commands.NewCommandManager()
-
-	cmdManager.RegisterDefaultCommandsToManager()
 
 	fs, err = os.OpenFile("log/logs.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 
@@ -97,19 +106,10 @@ func main() {
 	if *RemoveCommands {
 		logger.Info("Removing commands")
 
-		for _, c := range cmdManager.Commands {
-			for _, command := range c {
-				if !command.IsRegistered {
-					continue
-				}
+		err := cmdManager.DeleteAllCommands(s)
 
-				err = cmdManager.DeleteCommand(s, command.RegisteredCommand, command.GuildID)
-
-				if err != nil {
-					logger.Error(err, logger.LogFields{"message": "Error removing command"})
-				}
-				logger.Info("Removed command: " + command.ApplicationCommand.Name)
-			}
+		if err != nil {
+			logger.Error(err, logger.LogFields{"message": "Error removing all commands"})
 		}
 	}
 

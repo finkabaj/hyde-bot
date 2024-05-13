@@ -9,7 +9,7 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/utils/rule"
 )
 
-func HandleDeleteReaction(rm *rules.RuleManager) func(s *discordgo.Session, event any) {
+func HandleDeleteReaction(rm *rules.RuleManager) EventHandler {
 	return func(s *discordgo.Session, event any) {
 		typedEvent, ok := event.(*discordgo.MessageReactionAdd)
 

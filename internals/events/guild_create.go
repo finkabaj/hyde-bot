@@ -15,7 +15,7 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/utils/guild"
 )
 
-func HandleGuildCreate(rm *rules.RuleManager) func(s *discordgo.Session, event any) {
+func HandleGuildCreate(rm *rules.RuleManager, client *http.Client) EventHandler {
 	return func(s *discordgo.Session, event any) {
 		typedEvent, ok := event.(*discordgo.GuildCreate)
 
@@ -39,7 +39,7 @@ func HandleGuildCreate(rm *rules.RuleManager) func(s *discordgo.Session, event a
 		url := common.GetApiUrl(os.Getenv("API_HOST"), os.Getenv("API_PORT"), "/guild")
 
 		bodyReader := bytes.NewReader(jsonInfo)
-		res, err := http.Post(url, "application/json", bodyReader)
+		res, err := client.Post(url, "application/json", bodyReader)
 
 		if err != nil {
 			logger.Error(err, logger.LogFields{"message": "error while sending post request on guild create"})

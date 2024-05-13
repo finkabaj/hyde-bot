@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"slices"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -159,4 +160,16 @@ func RemoveDuplicates[T comparable](slice []T) []T {
 	}
 
 	return result
+}
+
+func HaveIntersection[T any](a, b []T) bool {
+	for _, val := range a {
+		if slices.ContainsFunc(b, func(v T) bool {
+			return reflect.DeepEqual(val, v)
+		}) {
+			return true
+		}
+	}
+
+	return false
 }
