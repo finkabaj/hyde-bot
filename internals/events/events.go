@@ -49,7 +49,7 @@ func (em *EventManager) RegisterDefaultEvents() {
 	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction(em.rm), guildID)
 	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate(em.cm), guildID)
 	em.RegisterEventHandler("GuildCreate", HandleGuildCreate(em.rm, em.client), "")
-	em.RegisterEventHandler("ModalSubmitReaction", HandleSumbitModalReaction, guildID)
+	em.RegisterEventHandler("ModalSubmitReaction", HandleSumbitModalReaction(em.rm), guildID)
 }
 
 // RegisterEventHandler registers an event handler for a specific guild.

@@ -32,7 +32,7 @@ func HandleGuildCreate(rm *rules.RuleManager, client *http.Client) EventHandler 
 		jsonInfo, err := json.Marshal(&info)
 
 		if err != nil {
-			logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
+			logger.Error(err, map[string]any{"details": "error while marshalling guild info"})
 			return
 		}
 
@@ -42,7 +42,7 @@ func HandleGuildCreate(rm *rules.RuleManager, client *http.Client) EventHandler 
 		res, err := client.Post(url, "application/json", bodyReader)
 
 		if err != nil {
-			logger.Error(err, logger.LogFields{"message": "error while sending post request on guild create"})
+			logger.Error(err, map[string]any{"details": "error while sending post request on guild create"})
 			return
 		}
 
@@ -51,7 +51,7 @@ func HandleGuildCreate(rm *rules.RuleManager, client *http.Client) EventHandler 
 		b, err := io.ReadAll(body)
 
 		if err != nil {
-			logger.Fatal(err, logger.LogFields{"message": "the bot cannot continue to work correctly", "at": "guild_create"})
+			logger.Fatal(err, map[string]any{"details": "the bot cannot continue to work correctly", "at": "guild_create"})
 		}
 
 		var result guild.Guild
@@ -67,9 +67,9 @@ func HandleGuildCreate(rm *rules.RuleManager, client *http.Client) EventHandler 
 		}
 
 		if errRes.Error == guild.ErrGuildConflict.Error() {
-			logger.Info("Guild already exists", logger.LogFields{"guildId": info.GuildId})
+			logger.Info("Guild already exists", map[string]any{"guildId": info.GuildId})
 		} else if errRes.Error != "" {
-			logger.Error(errors.New(errRes.Error), logger.ToLogFields(errRes.ValidationErrors))
+			logger.Error(errors.New(errRes.Error), logger.ToMap(errRes.ValidationErrors))
 			return
 		}
 
@@ -77,7 +77,7 @@ func HandleGuildCreate(rm *rules.RuleManager, client *http.Client) EventHandler 
 			rules, err := fetchRules(info.GuildId, rm)
 
 			if err != nil {
-				logger.Error(err, logger.LogFields{"message": "error on fetching rules", "at": "guild_create", "guildId": info.GuildId})
+				logger.Error(err, map[string]any{"details": "error on fetching rules", "at": "guild_create", "guildId": info.GuildId})
 				return
 			}
 

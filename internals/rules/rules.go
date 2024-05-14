@@ -14,6 +14,11 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/utils/rule"
 )
 
+var (
+	ErrIntersectingRules = errors.New("reaction rules already exist")
+	ErrRulesNotFound     = errors.New("rules not found")
+)
+
 type Rules struct {
 	ReactionRules     []rule.ReactionRule `json:"reactionRules"`
 	HaveReactionRules bool                `json:"haveReactionRules"`
@@ -40,6 +45,21 @@ func (rm *RuleManager) AddRules(guildId string, rules Rules) {
 	rm.rm[guildId] = rules
 }
 
+func (rm *RuleManager) AddReactionRules(guildId string, reactionRules []rule.ReactionRule) {
+	rules, ok := rm.rm[guildId]
+
+	if !ok {
+		rm.rm[guildId] = Rules{
+			ReactionRules:     reactionRules,
+			HaveReactionRules: true,
+		}
+	} else {
+		rules.ReactionRules = append(rules.ReactionRules, reactionRules...)
+		rules.HaveReactionRules = true
+	}
+
+}
+
 func (rm *RuleManager) GetRules(guildId string) (Rules, error) {
 	rules, ok := rm.rm[guildId]
 
@@ -58,7 +78,7 @@ func (rm *RuleManager) GetReactionRules(guildId string) ([]rule.ReactionRule, er
 	}
 
 	if !rules.HaveReactionRules {
-		return nil, errors.New("reaction rules not found")
+		return nil, ErrRulesNotFound
 	}
 
 	return rules.ReactionRules, nil
@@ -77,7 +97,7 @@ func (rm *RuleManager) FetchReactionRules(guildId string) ([]rule.ReactionRule, 
 	b, err := io.ReadAll(body)
 
 	if err != nil {
-		logger.Fatal(err, logger.LogFields{"MESSAGE": "The bot cannot continue to work correctly", "AT": "guild_create"})
+		logger.Fatal(err, map[string]any{"details": "The bot cannot continue to work correctly", "at": "guild_create"})
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -88,7 +108,7 @@ func (rm *RuleManager) FetchReactionRules(guildId string) ([]rule.ReactionRule, 
 			return nil, err
 		}
 
-		logger.Debug("Error response", logger.LogFields{"status": res.StatusCode, "error": errRes.Error, "validationErrors": errRes.ValidationErrors, "message": errRes.Message})
+		logger.Debug("Error response", map[string]any{"status": res.StatusCode, "error": errRes.Error, "validationErrors": errRes.ValidationErrors, "message": errRes.Message})
 		return nil, errors.New(errRes.Error)
 	}
 
@@ -105,12 +125,12 @@ func (rm *RuleManager) FetchReactionRules(guildId string) ([]rule.ReactionRule, 
 func (rm *RuleManager) PostReactionRules(guildId string, reactionRules []rule.ReactionRule) ([]rule.ReactionRule, error) {
 	existingRules, err := rm.GetReactionRules(guildId)
 
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrRulesNotFound) {
 		return nil, fmt.Errorf("error posting reaction rules: %w", err)
 	}
 
 	if common.HaveIntersection(existingRules, reactionRules) {
-		return nil, errors.New("reaction rules already exist")
+		return nil, ErrIntersectingRules
 	}
 
 	b, err := json.Marshal(reactionRules)
@@ -133,7 +153,7 @@ func (rm *RuleManager) PostReactionRules(guildId string, reactionRules []rule.Re
 	b, err = io.ReadAll(body)
 
 	if err != nil {
-		logger.Fatal(err, logger.LogFields{"MESSAGE": "The bot cannot continue to work correctly", "AT": "guild_create"})
+		logger.Fatal(err, map[string]any{"details": "The bot cannot continue to work correctly", "at": "guild_create"})
 	}
 
 	if res.StatusCode != http.StatusCreated {
@@ -144,7 +164,7 @@ func (rm *RuleManager) PostReactionRules(guildId string, reactionRules []rule.Re
 			return nil, err
 		}
 
-		logger.Debug("Error response", logger.LogFields{"status": res.StatusCode, "error": errRes.Error, "validationErrors": errRes.ValidationErrors, "message": errRes.Message})
+		logger.Debug("Error response", map[string]any{"status": res.StatusCode, "error": errRes.Error, "validationErrors": errRes.ValidationErrors, "message": errRes.Message})
 
 		return nil, errors.New(errRes.Error)
 	}

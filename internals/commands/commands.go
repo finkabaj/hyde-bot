@@ -54,10 +54,6 @@ func (cm *CommandManager) RegisterDefaultCommandsToManager() {
 	cm.RegisterCommandToManager(CreateReactionRuleCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		CreateReactionRuleHandler(s, i, cm.rm)
 	}, guildID)
-
-	cm.RegisterCommandToManager(testCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		TestHandler(s, i)
-	}, guildID)
 }
 
 // RegisterCommandToManager registers a command in the CommandManager. If guildID is an empty string, the command will be registered globally.
@@ -76,7 +72,7 @@ func (cm *CommandManager) RegisterCommandToManager(cmd *discordgo.ApplicationCom
 	}
 
 	if _, ok := cm.commands[cmd.Name][guildID]; ok {
-		logger.Warn(errors.New("command already exists"), logger.LogFields{"command": cmd.Name, "guildID": guildID})
+		logger.Warn(errors.New("command already exists"), map[string]any{"command": cmd.Name, "guildID": guildID})
 		return
 	}
 
@@ -117,7 +113,7 @@ func (cm *CommandManager) RegisterCommand(s *discordgo.Session, command *discord
 
 	if !ok {
 		err = errors.New("command not found")
-		logger.Warn(err, logger.LogFields{"command": cmd.Name, "guildID": guildID})
+		logger.Warn(err, map[string]any{"command": cmd.Name, "guildID": guildID})
 		return
 	}
 
@@ -144,7 +140,7 @@ func (cm *CommandManager) DeleteCommand(s *discordgo.Session, command *discordgo
 
 	if !ok {
 		err = errors.New("command not found")
-		logger.Warn(err, logger.LogFields{"command": command.Name, "guildID": guildID})
+		logger.Warn(err, map[string]any{"command": command.Name, "guildID": guildID})
 		return
 	}
 
@@ -212,7 +208,7 @@ func (cm *CommandManager) DeleteAllCommands(s *discordgo.Session) error {
 			err := cm.DeleteCommand(s, c.RegisteredCommand, c.GuildID, true)
 
 			if err != nil {
-				logger.Error(err, logger.LogFields{"message": "Error removing command"})
+				logger.Error(err, map[string]any{"details": "Error removing command"})
 				return err
 			}
 			logger.Info("Removed command: " + c.ApplicationCommand.Name)

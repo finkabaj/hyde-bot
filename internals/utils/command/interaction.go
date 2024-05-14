@@ -7,7 +7,7 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/logger"
 )
 
-func DefaultErrorResponse(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
+func SendDefaultResponse(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -23,28 +23,49 @@ func DefaultErrorResponse(s *discordgo.Session, i *discordgo.InteractionCreate, 
 	}
 
 	if os.Getenv("ENV") == "development" {
-		logger.Debug("Sent error response", FillFields(i))
+		logger.Debug("Sent response", FillFields(i))
 	}
 }
 
-func FillFields(i *discordgo.InteractionCreate) logger.LogFields {
-	if i.Type == discordgo.InteractionApplicationCommand {
-		optionFields := make(logger.LogFields)
+func FillFields(i *discordgo.InteractionCreate) map[string]any {
+	switch i.Type {
+	case discordgo.InteractionApplicationCommand:
+		optionFields := make(map[string]any)
 
 		for _, option := range i.ApplicationCommandData().Options {
 			optionFields[option.Name] = option.Value
 		}
 
-		return logger.LogFields{
+		return map[string]any{
 			"InteractionType":    i.Type,
 			"InteractionName":    i.ApplicationCommandData().Name,
 			"InteractionOptions": optionFields,
 			"InteractionTarget":  i.ApplicationCommandData().TargetID,
 		}
-	}
+	case discordgo.InteractionModalSubmit:
+		data := i.ModalSubmitData()
 
-	return logger.LogFields{
-		"InteractionType":    i.Type,
-		"InteractionMessage": i.Message.Content,
+		modalFields := make(map[string]any)
+
+		for _, component := range data.Components {
+			switch component.(type) {
+			case *discordgo.ActionsRow:
+				actionsRow := component.(*discordgo.ActionsRow)
+				for _, action := range actionsRow.Components {
+					switch action.(type) {
+					case *discordgo.TextInput:
+						textInput := action.(*discordgo.TextInput)
+						modalFields["TextInput"] = textInput.Value
+					}
+				}
+			}
+		}
+
+		return map[string]any{
+			"InteractionType": i.Type,
+			"InteractionData": modalFields,
+		}
+	default:
+		return map[string]any{"InteractionType": "Unknown interaction type"}
 	}
 }

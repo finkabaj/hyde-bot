@@ -58,7 +58,7 @@ func (ec *GuildController) postGuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := common.MarshalBody(w, http.StatusCreated, &newGuild); err != nil {
-		ec.logger.Error(err, logger.LogFields{"message": "error while marshalling guild info"})
+		ec.logger.Error(err, map[string]any{"details": "error while marshalling guild info"})
 		common.SendInternalError(w)
 	}
 }
@@ -80,7 +80,7 @@ func (ec *GuildController) getGuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := common.MarshalBody(w, http.StatusOK, &g); err != nil {
-		ec.logger.Error(err, logger.LogFields{"message": "Error while marshaling get guild"})
+		ec.logger.Error(err, map[string]any{"details": "Error while marshaling get guild"})
 		common.SendInternalError(w)
 	}
 }

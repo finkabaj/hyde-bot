@@ -29,7 +29,7 @@ func NewPostgresql(logger logger.ILogger) *Postgresql {
 
 func (p *Postgresql) setup() (err error) {
 	if err = p.Status(); err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "error while creating tables"})
+		p.logger.Error(err, map[string]any{"details": "error while creating tables"})
 		return
 	}
 
@@ -142,17 +142,16 @@ func (p *Postgresql) CreateGuild(gc guild.GuildCreate) (guild.Guild, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 	defer cancel()
 	row, err := p.pool.Query(ctx, query, gc.GuildId, gc.OwnerId)
-	defer row.Close()
-
 	if err != nil {
-		p.logger.Warn(err, logger.LogFields{"message": "error in CreateGuild query"})
+		p.logger.Warn(err, map[string]any{"details": "error in CreateGuild query"})
 		return guild.Guild{}, common.ErrInternal
 	}
+	defer row.Close()
 
 	newGuild, err := pgx.CollectExactlyOneRow(row, pgx.RowToStructByName[guild.Guild])
 
 	if err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "error when collecting rows in CreateGuild"})
+		p.logger.Error(err, map[string]any{"details": "error when collecting rows in CreateGuild"})
 		return guild.Guild{}, common.ErrInternal
 	}
 
@@ -169,7 +168,7 @@ func (p *Postgresql) ReadGuild(guildId string) (guild.Guild, error) {
 	row, err := p.pool.Query(ctx, query, guildId)
 
 	if err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "error in GetGuild query"})
+		p.logger.Error(err, map[string]any{"details": "error in GetGuild query"})
 		return guild.Guild{}, common.ErrInternal
 	}
 	defer row.Close()
@@ -179,7 +178,7 @@ func (p *Postgresql) ReadGuild(guildId string) (guild.Guild, error) {
 	if err == pgx.ErrNoRows {
 		return guild.Guild{}, common.ErrNotFound
 	} else if err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "error while collecting rows in GetGuild"})
+		p.logger.Error(err, map[string]any{"details": "error while collecting rows in GetGuild"})
 		return guild.Guild{}, common.ErrInternal
 	}
 
@@ -193,7 +192,7 @@ func (p *Postgresql) CreateReactionRules(rules []rule.ReactionRule) ([]rule.Reac
 	tx, err := p.pool.Begin(ctx)
 
 	if err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "transaction begin in CreateReactionRules"})
+		p.logger.Error(err, map[string]any{"details": "transaction begin in CreateReactionRules"})
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 
@@ -214,13 +213,13 @@ func (p *Postgresql) CreateReactionRules(rules []rule.ReactionRule) ([]rule.Reac
 	)
 
 	if err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "error while inserting to reactionRules"})
+		p.logger.Error(err, map[string]any{"details": "error while inserting to reactionRules"})
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 
 	if int(copyCount) != len(rows) {
 		err = common.ErrInternal
-		p.logger.Error(err, logger.LogFields{"message": fmt.Sprintf("Expected %d but got %d at CreateReactionRules", len(rows), int(copyCount))})
+		p.logger.Error(err, map[string]any{"details": fmt.Sprintf("Expected %d but got %d at CreateReactionRules", len(rows), int(copyCount))})
 		return []rule.ReactionRule{}, err
 	}
 
@@ -267,7 +266,7 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
 	rows, err := p.pool.Query(ctx, query, gId)
 
 	if err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "error in GetReactionRules query"})
+		p.logger.Error(err, map[string]any{"details": "error in GetReactionRules query"})
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 
@@ -276,7 +275,7 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
 	if err == pgx.ErrNoRows {
 		return []rule.ReactionRule{}, common.ErrNotFound
 	} else if err != nil {
-		p.logger.Error(err, logger.LogFields{"message": "error while collecting rows in GetReactionRules"})
+		p.logger.Error(err, map[string]any{"details": "error while collecting rows in GetReactionRules"})
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 

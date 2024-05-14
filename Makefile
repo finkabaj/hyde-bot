@@ -9,7 +9,7 @@ clean:
 build_bot: clean vet_bot
 		go build -o dist/ -v cmd/hyde-bot/hyde_bot.go
 run_bot_rmcmd: vet_bot
-		go run cmd/hyde-bot/hyde_bot.go --rmcmd true $(ARGS)
+		go run cmd/hyde-bot/hyde_bot.go --rmcmd=true $(ARGS)
 run_bot: vet_bot
 		go run cmd/hyde-bot/hyde_bot.go $(ARGS)
 
