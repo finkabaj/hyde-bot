@@ -4,53 +4,43 @@ import (
 	"io"
 	"os"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 type ILogger interface {
-	Fatal(err error, fields ...LogFields)
-	Error(err error, fields ...LogFields)
-	Warn(err error, fields ...LogFields)
-	Info(message string, fields ...LogFields)
-	Debug(message string, fields ...LogFields)
+	Fatal(err error, fields ...map[string]any)
+	Error(err error, fields ...map[string]any)
+	Warn(err error, fields ...map[string]any)
+	Info(message string, fields ...map[string]any)
+	Debug(message string, fields ...map[string]any)
 }
 
 type Logger struct {
-	logger *logrus.Logger
+	logger zerolog.Logger
 }
-
-type LogFields logrus.Fields
 
 var logger *Logger
 
 // If logger used in a package that should be tested, you should use Logger class methods instead of global functions.
 func NewLogger(output *os.File) *Logger {
 	var target io.Writer
-	var level logrus.Level
-	var format logrus.Formatter
 	env := os.Getenv("ENV")
 
 	if env == "development" {
-		level = logrus.DebugLevel
-		target = io.MultiWriter(output, os.Stdout)
-		format = &logrus.TextFormatter{
-			ForceColors:     true,
-			FullTimestamp:   true,
-			TimestampFormat: "2006-01-02 15:04:05",
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		consoleWriter := zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: "2006-01-02 15:04:05",
 		}
+		target = zerolog.MultiLevelWriter(consoleWriter, output)
 	} else {
-		level = logrus.InfoLevel
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		target = output
-		format = &logrus.JSONFormatter{}
 	}
 
 	if logger == nil {
 		logger = &Logger{
-			logger: &logrus.Logger{
-				Out:       target,
-				Level:     level,
-				Formatter: format,
-			},
+			logger: zerolog.New(target).With().Timestamp().Logger(),
 		}
 	}
 
@@ -58,88 +48,94 @@ func NewLogger(output *os.File) *Logger {
 }
 
 // Logs fattal error and exits the program fields are optional
-func (l *Logger) Fatal(err error, fields ...LogFields) {
+// Field with key "message" will be ignored
+func (l *Logger) Fatal(err error, fields ...map[string]any) {
 	if len(fields) > 0 {
-		l.logger.WithFields(logrus.Fields(fields[0])).Fatal(err)
+		l.logger.Fatal().Err(err).Fields(fields[0]).Msg("")
 	} else {
-		l.logger.Fatal(err)
+		l.logger.Fatal().Err(err).Msg("")
 	}
 }
 
 // Logs error fields are optional
-func (l *Logger) Error(err error, fields ...LogFields) {
+// Field with key "message" will be ignored
+func (l *Logger) Error(err error, fields ...map[string]any) {
 	if len(fields) > 0 {
-		l.logger.WithFields(logrus.Fields(fields[0])).Error(err)
+		l.logger.Error().Err(err).Fields(fields[0]).Msg("")
 	} else {
-		l.logger.Error(err)
+		l.logger.Error().Err(err).Msg("")
 	}
 }
 
 // Logs warning fields are optional
-func (l *Logger) Warn(err error, fields ...LogFields) {
+// Field with key "message" will be ignored
+func (l *Logger) Warn(err error, fields ...map[string]any) {
 	if len(fields) > 0 {
-		l.logger.WithFields(logrus.Fields(fields[0])).Warn(err)
+		l.logger.Warn().Err(err).Fields(fields[0]).Msg("")
 	} else {
-		l.logger.Warn(err)
+		l.logger.Warn().Err(err).Msg("")
 	}
 }
 
 // Logs info fields are optional
-func (l *Logger) Info(message string, fields ...LogFields) {
+// Field with key "message" will be ignored
+func (l *Logger) Info(message string, fields ...map[string]any) {
 	if len(fields) > 0 {
-		l.logger.WithFields(logrus.Fields(fields[0])).Info(message)
+		l.logger.Info().Fields(fields[0]).Msg(message)
 	} else {
-		l.logger.Info(message)
+		l.logger.Info().Msg(message)
 	}
 }
 
-func (l *Logger) Debug(message string, fields ...LogFields) {
+// Logs debug fields are optional
+// Field with key "message" will be ignored
+func (l *Logger) Debug(message string, fields ...map[string]any) {
 	if len(fields) > 0 {
-		l.logger.WithFields(logrus.Fields(fields[0])).Debug(message)
+		l.logger.Debug().Fields(fields[0]).Msg(message)
 	} else {
-		l.logger.Debug(message)
+		l.logger.Debug().Msg(message)
 	}
 }
 
 // Logs fatal error and exits the program fields are optional
-func Fatal(err error, fields ...LogFields) {
+func Fatal(err error, fields ...map[string]any) {
 	logger.Fatal(err, fields...)
 }
 
 // Logs error fields are optional
-func Error(err error, fields ...LogFields) {
+func Error(err error, fields ...map[string]any) {
 	logger.Error(err, fields...)
 }
 
 // Logs warning fields are optional
-func Warn(err error, fields ...LogFields) {
+func Warn(err error, fields ...map[string]any) {
 	logger.Warn(err, fields...)
 }
 
 // Logs info fields are optional
-func Info(message string, fields ...LogFields) {
+func Info(message string, fields ...map[string]any) {
 	logger.Info(message, fields...)
 }
 
 // Logs debug fields are optional
-func Debug(message string, fields ...LogFields) {
+func Debug(message string, fields ...map[string]any) {
 	logger.Debug(message, fields...)
 }
 
-func ToLogFields[T map[string]string | map[string]interface{}](fields T) LogFields {
+func ToMap[T map[string]string | map[string]any](fields T) map[string]any {
 	if fields == nil {
-		return LogFields{}
+		return map[string]any{}
 	}
 
 	af := any(fields)
 
 	if asf, ok := af.(map[string]interface{}); ok {
-		return LogFields(asf)
+		return map[string]any(asf)
 	}
 
 	afm := af.(map[string]string)
 
-	afmRes := make(LogFields, len(afm))
+	afmRes := make(map[string]any, len(afm))
 
 	for dick, ass := range afm {
 		afmRes[dick] = ass

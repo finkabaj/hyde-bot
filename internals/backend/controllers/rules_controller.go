@@ -66,7 +66,7 @@ func (rc *RulesController) getReactions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := common.MarshalBody(w, http.StatusOK, &rules); err != nil {
-		rc.logger.Error(err, logger.LogFields{"message": "Error while marhsaling getReactionsRules response"})
+		rc.logger.Error(err, map[string]any{"details": "Error while marhsaling getReactionsRules response"})
 		common.NewErrorResponseBuilder(common.ErrInternal).
 			SetMessage("Internal server error").
 			SetStatus(http.StatusInternalServerError).
@@ -75,10 +75,10 @@ func (rc *RulesController) getReactions(w http.ResponseWriter, r *http.Request) 
 }
 
 func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request) {
-	rRules, ok := r.Context().Value(middleware.ValidateJsonCtxKey).([]rule.ReactionRule)
+	rRules, ok := middleware.JsonFromContext(r.Context()).([]rule.ReactionRule)
 
 	if !ok {
-		rc.logger.Error(common.ErrInternal, logger.LogFields{"message": "error while validating postReactions"})
+		rc.logger.Error(common.ErrInternal, map[string]any{"details": "error while validating postReactions"})
 		common.NewErrorResponseBuilder(common.ErrInternal).
 			SetStatus(http.StatusInternalServerError).
 			SetMessage("Error while validating").
@@ -88,37 +88,37 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 
 	newRules, err := rc.reactionService.CreateReactionRules(rRules)
 
-	switch {
-	case err == common.ErrInternal:
+	switch err {
+	case common.ErrInternal:
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusInternalServerError).
 			Send(w)
 		return
-	case err == rule.ErrRuleReactionConflict:
+	case rule.ErrRuleReactionConflict:
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusConflict).
 			SetMessage("rule on this reaction already exists").
 			Send(w)
 		return
-	case err == rule.ErrRuleReactionIncompatible:
+	case rule.ErrRuleReactionIncompatible:
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusConflict).
 			SetMessage("either emoji name or emoji id must be provided").
 			Send(w)
 		return
-	case err == common.ErrBadRequest:
+	case common.ErrBadRequest:
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusBadRequest).
 			SetMessage("invalid request body").
 			Send(w)
 		return
-	case err == common.ErrNotFound:
+	case common.ErrNotFound:
 		common.SendNotFoundError(w, "provided guild not found")
 		return
 	}
 
 	if err := common.MarshalBody(w, http.StatusCreated, &newRules); err != nil {
-		rc.logger.Error(common.ErrInternal, logger.LogFields{"message": "error while marshaling postReactions"})
+		rc.logger.Error(common.ErrInternal, map[string]any{"details": "error while marshaling postReactions"})
 		common.NewErrorResponseBuilder(err).
 			SetMessage("Error while marshing response").
 			SetStatus(http.StatusInternalServerError).
@@ -128,24 +128,30 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 
 func (rc *RulesController) deleteReactions(w http.ResponseWriter, r *http.Request) {
 	gId := chi.URLParam(r, "id")
-	query := r.Context().Value(middleware.ValidateQueryCtxKey).([]rule.DeleteReactionRuleQuery)
+	query, ok := middleware.QueryFromContext(r.Context()).([]rule.DeleteReactionRuleQuery)
+
+	if !ok {
+		rc.logger.Error(common.ErrInternal, map[string]any{"details": "no value found in context"})
+		common.SendInternalError(w)
+		return
+	}
 
 	err := rc.reactionService.DeleteReactionRules(query, gId)
 
-	switch {
-	case err == common.ErrNotFound:
+	switch err {
+	case common.ErrNotFound:
 		common.SendNotFoundError(w, "no rules found for the guild")
 		return
-	case err == common.ErrInternal:
+	case common.ErrInternal:
 		common.SendInternalError(w)
 		return
-	case err == rule.ErrRuleReactionIncompatible:
+	case rule.ErrRuleReactionIncompatible:
 		common.NewErrorResponseBuilder(err).
 			SetMessage("either emoji name or emoji id must be provided").
 			SetStatus(http.StatusConflict).
 			Send(w)
 		return
-	case err == common.ErrBadRequest:
+	case common.ErrBadRequest:
 		common.SendBadRequestError(w, "invalid request query")
 		return
 	}
@@ -157,7 +163,7 @@ func (rc *RulesController) deleteReactions(w http.ResponseWriter, r *http.Reques
 	res := common.OkResponse{Message: fmt.Sprintf("successfully deleted %d %s", len(query), ruleWord)}
 
 	if err := common.MarshalBody(w, http.StatusOK, &res); err != nil {
-		rc.logger.Error(err, logger.LogFields{"message": "error while marhsalong deleteReactions response"})
+		rc.logger.Error(err, map[string]any{"details": "error while marhsalong deleteReactions response"})
 		common.SendInternalError(w, "error while marshaling deleteReactions response")
 	}
 }

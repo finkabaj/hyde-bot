@@ -11,8 +11,9 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type validateJsonCtxKey struct{}
+
 var validate *validator.Validate
-var ValidateJsonCtxKey = "json"
 
 func init() {
 	validate = validator.New()
@@ -53,8 +54,12 @@ func ValidateJson[T any]() func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), ValidateJsonCtxKey, v)
+			ctx := context.WithValue(r.Context(), validateJsonCtxKey{}, v)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func JsonFromContext(ctx context.Context) any {
+	return ctx.Value(validateJsonCtxKey{})
 }

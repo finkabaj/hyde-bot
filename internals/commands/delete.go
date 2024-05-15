@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
-	"github.com/finkabaj/hyde-bot/internals/utils/command"
+	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
 var dmDeletePermission = false
@@ -25,30 +25,24 @@ var DeleteCommand = &discordgo.ApplicationCommand{
 	},
 }
 
-func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, cm *CommandManager) {
 	commandName := i.ApplicationCommandData().Options[0].StringValue()
 	content := ""
 
-	cm := NewCommandManager()
+	command, err := cm.GetCommandByName(commandName, i.GuildID)
 
-	command, ok := cm.Commands[commandName]
+	if err != nil || !command.IsRegistered {
+		command, err = cm.GetCommandByName(commandName, "")
 
-	if !ok {
-		content = "Command not found"
-	}
-
-	var c *Command
-
-	if c, ok = command[i.Interaction.GuildID]; ok && !c.IsRegistered {
-		if c, ok = command[""]; ok {
-			content = "You can't delete default commands"
-		} else {
+		if err != nil {
 			content = "Command not found"
+		} else {
+			content = "You can't delete default commands"
 		}
 	}
 
 	if content == "" {
-		err := cm.DeleteCommand(s, c.RegisteredCommand, i.Interaction.GuildID)
+		err := cm.DeleteCommand(s, command.RegisteredCommand, i.GuildID, false)
 
 		if err != nil {
 			logger.Error(err, commandUtils.FillFields(i))
@@ -59,7 +53,7 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		content = "Command deleted"
 	}
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: content,

@@ -3,3 +3,4 @@
 *.log
 dist/
 cover.out
+Session.vim

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/finkabaj/hyde-bot/internals/backend/controllers"
 	"github.com/finkabaj/hyde-bot/internals/backend/services"
@@ -73,5 +74,19 @@ func main() {
 	host := os.Getenv("API_HOST")
 	port := os.Getenv("API_PORT")
 
-	http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), r)
+	server := http.Server{
+		Addr:         fmt.Sprintf("%s:%s", host, port),
+		Handler:      r,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		IdleTimeout:  600 * time.Second,
+	}
+
+	err = server.ListenAndServe()
+
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	logger.Info("API is up and running!")
 }

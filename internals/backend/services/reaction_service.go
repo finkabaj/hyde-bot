@@ -1,6 +1,8 @@
 package services
 
 import (
+	"slices"
+
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/finkabaj/hyde-bot/internals/utils/common"
@@ -52,9 +54,13 @@ func (rs *ReactionService) CreateReactionRules(rules []rule.ReactionRule) ([]rul
 			return []rule.ReactionRule{}, common.ErrBadRequest
 		}
 
-		if v.EmojiId != "" && common.ContainsFieldValue(foundRules, "EmojiId", v.EmojiId) {
+		if v.EmojiId != "" && slices.ContainsFunc(foundRules, func(r rule.ReactionRule) bool {
+			return r.EmojiId == v.EmojiId
+		}) {
 			return []rule.ReactionRule{}, rule.ErrRuleReactionConflict
-		} else if v.EmojiName != "" && common.ContainsFieldValue(foundRules, "EmojiName", v.EmojiName) {
+		} else if v.EmojiName != "" && slices.ContainsFunc(foundRules, func(r rule.ReactionRule) bool {
+			return r.EmojiName == v.EmojiName
+		}) {
 			return []rule.ReactionRule{}, rule.ErrRuleReactionConflict
 		}
 

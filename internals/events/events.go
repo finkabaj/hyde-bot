@@ -1,9 +1,13 @@
 package events
 
 import (
+	"net/http"
 	"os"
+	"reflect"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/finkabaj/hyde-bot/internals/commands"
+	"github.com/finkabaj/hyde-bot/internals/rules"
 )
 
 type EventHandler func(s *discordgo.Session, event interface{})
@@ -15,30 +19,37 @@ type Event struct {
 }
 
 type EventManager struct {
+	rm     *rules.RuleManager
+	cm     *commands.CommandManager
 	Events map[string]map[string]*Event // Events[type][guildID] = event
+	client *http.Client
 }
 
 var em *EventManager
 
-func NewEventManager() *EventManager {
+func NewEventManager(rm *rules.RuleManager, cm *commands.CommandManager, client *http.Client) *EventManager {
 	if em == nil {
 		return &EventManager{
+			rm:     rm,
+			cm:     cm,
 			Events: make(map[string]map[string]*Event),
+			client: client,
 		}
 	}
 	return em
 }
 
 func (em *EventManager) RegisterDefaultEvents() {
-	var guildID string = ""
+	var guildID string
 
 	if os.Getenv("ENV") == "development" {
 		guildID = os.Getenv("DEV_GUILD_ID")
 	}
 
-	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction, guildID)
-	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate, guildID)
-	em.RegisterEventHandler("GuildCreate", HandleGuildCreate, "")
+	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction(em.rm), guildID)
+	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate(em.cm), guildID)
+	em.RegisterEventHandler("GuildCreate", HandleGuildCreate(em.rm, em.client), "")
+	em.RegisterEventHandler("ModalSubmitReaction", HandleSumbitModalReaction(em.rm), guildID)
 }
 
 // RegisterEventHandler registers an event handler for a specific guild.
@@ -75,53 +86,47 @@ func (em *EventManager) HandleEvent(s *discordgo.Session, event interface{}) {
 
 	if eventHandlers, ok := em.Events[eventType]; ok {
 		if eventHandler, ok := eventHandlers[guildID]; ok {
-			eventHandler.Handler(s, event)
+			go eventHandler.Handler(s, event)
 		} else if globalEventHandler, ok := eventHandlers[""]; ok {
-			globalEventHandler.Handler(s, event)
+			go globalEventHandler.Handler(s, event)
 		}
 	}
 }
 
 // getEventType returns the type of the event based on its underlying struct.
 func getEventType(event interface{}) string {
-	switch event.(type) {
-	case *discordgo.InteractionCreate:
-		return "InteractionCreate"
-	case *discordgo.MessageCreate:
-		return "MessageCreate"
-	case *discordgo.MessageUpdate:
-		return "MessageUpdate"
-	case *discordgo.MessageDelete:
-		return "MessageDelete"
-	case *discordgo.MessageReactionAdd:
-		return "MessageReactionAdd"
-	case *discordgo.MessageReactionRemove:
-		return "MessageReactionRemove"
-	case *discordgo.GuildCreate:
-		return "GuildCreate"
-	default:
-		return ""
+	t := reflect.TypeOf(event)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
+
+	if i, ok := event.(*discordgo.InteractionCreate); ok {
+		if i.Type == discordgo.InteractionModalSubmit {
+			return "ModalSubmitReaction"
+		}
+	}
+
+	return t.Name()
 }
 
 // getGuildID returns the guild ID associated with the event, if applicable.
-func getGuildID(event interface{}) string {
-	switch e := event.(type) {
-	case *discordgo.InteractionCreate:
-		return e.Interaction.GuildID
-	case *discordgo.MessageCreate:
-		return e.GuildID
-	case *discordgo.MessageUpdate:
-		return e.GuildID
-	case *discordgo.MessageDelete:
-		return e.GuildID
-	case *discordgo.MessageReactionAdd:
-		return e.GuildID
-	case *discordgo.MessageReactionRemove:
-		return e.GuildID
-	case *discordgo.GuildCreate:
-		return e.ID
-	default:
-		return ""
+func getGuildID(event any) string {
+	v := reflect.ValueOf(event)
+
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
 	}
+
+	if v.Kind() == reflect.Struct {
+		field := v.FieldByName("GuildID")
+		if field.IsValid() {
+			return field.String()
+		}
+	}
+
+	if e, ok := event.(*discordgo.GuildCreate); ok {
+		return e.ID
+	}
+
+	return ""
 }

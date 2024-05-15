@@ -4,36 +4,36 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/commands"
 	"github.com/finkabaj/hyde-bot/internals/logger"
-	"github.com/finkabaj/hyde-bot/internals/utils/command"
+	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
-func HandleInteractionCreate(s *discordgo.Session, event interface{}) {
-	i := event.(*discordgo.InteractionCreate)
+func HandleInteractionCreate(cm *commands.CommandManager) EventHandler {
+	return func(s *discordgo.Session, event interface{}) {
+		i := event.(*discordgo.InteractionCreate)
 
-	cm := commands.NewCommandManager()
-
-	if i.Type == discordgo.InteractionApplicationCommand {
-		cmd, ok := cm.Commands[i.ApplicationCommandData().Name][i.Interaction.GuildID]
-
-		if !ok {
-			cmd, ok = cm.Commands[i.ApplicationCommandData().Name][""]
-		}
-
-		if !ok {
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "Command is not registered",
-					Flags:   1 << 6,
-				},
-			})
+		if i.Type == discordgo.InteractionApplicationCommand {
+			cmd, err := cm.GetCommandByName(i.ApplicationCommandData().Name, i.GuildID)
 
 			if err != nil {
-				logger.Error(err, commandUtils.FillFields(i))
-			}
-		}
+				cmd, err = cm.GetCommandByName(i.ApplicationCommandData().Name, "")
 
-		cmd.Handler(s, i)
-		logger.Info("Command executed", commandUtils.FillFields(i))
+				if err != nil {
+					err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Command is not registered",
+							Flags:   1 << 6,
+						},
+					})
+
+					if err != nil {
+						logger.Error(err, commandUtils.FillFields(i))
+					}
+				}
+			}
+
+			cmd.Handler(s, i)
+			logger.Info("Command executed", commandUtils.FillFields(i))
+		}
 	}
 }

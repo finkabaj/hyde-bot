@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"slices"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -41,6 +42,12 @@ func MarshalBody(w http.ResponseWriter, status int, v any) (err error) {
 
 // Use this function if you have UnmarshalJSON method in your struct
 func UnmarshalBodyBytes(body []byte, v any) (err error) {
+	if string(body) == "[]" {
+		// If the JSON string is an empty array, set the target to an empty slice
+		reflect.ValueOf(v).Elem().Set(reflect.MakeSlice(reflect.TypeOf(v).Elem(), 0, 0))
+		return nil
+	}
+
 	err = json.Unmarshal(body, v)
 
 	return
@@ -95,27 +102,6 @@ func EveryFieldValueContains[T any](arr []T, fieldName string, fieldValue interf
 	return true
 }
 
-// Only checks exported fields
-func ContainsFieldValue[T any](arr []T, fieldName string, fieldValue interface{}) bool {
-	for _, item := range arr {
-		v := reflect.ValueOf(item)
-		if v.Kind() != reflect.Struct {
-			return false
-		}
-
-		field := v.FieldByName(fieldName)
-
-		if !field.IsValid() {
-			return false
-		}
-
-		if field.Interface() == fieldValue {
-			return true
-		}
-	}
-	return false
-}
-
 func DestructureStructSlice(slice interface{}) [][]any {
 	val := reflect.ValueOf(slice)
 	if val.Kind() != reflect.Slice {
@@ -153,4 +139,16 @@ func RemoveDuplicates[T comparable](slice []T) []T {
 	}
 
 	return result
+}
+
+func HaveIntersection[T any](a, b []T) bool {
+	for _, val := range a {
+		if slices.ContainsFunc(b, func(v T) bool {
+			return reflect.DeepEqual(val, v)
+		}) {
+			return true
+		}
+	}
+
+	return false
 }

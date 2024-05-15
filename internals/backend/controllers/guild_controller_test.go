@@ -113,7 +113,7 @@ func testGetGuildNegativeInternalError(t *testing.T) {
 
 func testGetGuildNegativeWtf(t *testing.T) {
 	gId := "negativeWtf"
-	expectedError := errors.New("WTF")
+	expectedError := errors.New("wtf")
 	expectedResponse := common.NewErrorResponseBuilder(common.ErrInternal).
 		SetStatus(http.StatusInternalServerError).
 		SetMessage("Unexpected error at getGuild").

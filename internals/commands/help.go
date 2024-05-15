@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
-	"github.com/finkabaj/hyde-bot/internals/utils/command"
+	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
 var dmHelpPermission = true
@@ -17,24 +17,18 @@ var HelpCommand = &discordgo.ApplicationCommand{
 	DefaultMemberPermissions: &memberHelpPermission,
 }
 
-func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, cmdManager *CommandManager) {
 	commands := "Available commands:\n"
 
-	cmdManager := NewCommandManager()
+	cmds := cmdManager.GetGuildCommands(i.GuildID)
 
-	for _, command := range cmdManager.Commands {
-		cmd, ok := command[i.Interaction.GuildID]
+	if len(cmds) == 0 {
+		commands = "No commands available"
+	}
 
-		if !ok {
-			cmd, ok = command[""]
-
-			if !ok {
-				continue
-			}
-		}
-
-		if cmd.IsRegistered {
-			commands += "/" + cmd.ApplicationCommand.Name + "\n"
+	for _, command := range cmds {
+		if command.IsRegistered {
+			commands += "/" + command.ApplicationCommand.Name + "\n"
 		}
 	}
 
