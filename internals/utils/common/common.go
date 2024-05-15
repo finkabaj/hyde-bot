@@ -102,27 +102,6 @@ func EveryFieldValueContains[T any](arr []T, fieldName string, fieldValue interf
 	return true
 }
 
-// Only checks exported fields
-func ContainsFieldValue[T any](arr []T, fieldName string, fieldValue interface{}) bool {
-	for _, item := range arr {
-		v := reflect.ValueOf(item)
-		if v.Kind() != reflect.Struct {
-			return false
-		}
-
-		field := v.FieldByName(fieldName)
-
-		if !field.IsValid() {
-			return false
-		}
-
-		if field.Interface() == fieldValue {
-			return true
-		}
-	}
-	return false
-}
-
 func DestructureStructSlice(slice interface{}) [][]any {
 	val := reflect.ValueOf(slice)
 	if val.Kind() != reflect.Slice {

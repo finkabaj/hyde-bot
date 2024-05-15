@@ -7,7 +7,7 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/utils/common"
 )
 
-var ValidateQueryCtxKey = "query"
+type validateQueryCtxKey struct{}
 
 // **********************************
 // XXX maybe need to rework in future.
@@ -23,8 +23,12 @@ func ValidateQuery[T any](decoder func(q string) T) func(http.Handler) http.Hand
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), ValidateQueryCtxKey, dQuery)
+			ctx := context.WithValue(r.Context(), validateQueryCtxKey{}, dQuery)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func QueryFromContext(ctx context.Context) any {
+	return ctx.Value(validateQueryCtxKey{})
 }

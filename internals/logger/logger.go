@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -92,7 +91,6 @@ func (l *Logger) Info(message string, fields ...map[string]any) {
 // Field with key "message" will be ignored
 func (l *Logger) Debug(message string, fields ...map[string]any) {
 	if len(fields) > 0 {
-		fmt.Println(fields[0])
 		l.logger.Debug().Fields(fields[0]).Msg(message)
 	} else {
 		l.logger.Debug().Msg(message)

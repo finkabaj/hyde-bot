@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/finkabaj/hyde-bot/internals/utils/common"
@@ -27,6 +28,7 @@ type Rules struct {
 type RuleManager struct {
 	rm     map[string]Rules
 	client *http.Client
+	lock   sync.RWMutex
 }
 
 var ruleManager *RuleManager
@@ -42,10 +44,16 @@ func NewRuleManager(client *http.Client) *RuleManager {
 }
 
 func (rm *RuleManager) AddRules(guildId string, rules Rules) {
+	rm.lock.Lock()
+	defer rm.lock.Unlock()
+
 	rm.rm[guildId] = rules
 }
 
 func (rm *RuleManager) AddReactionRules(guildId string, reactionRules []rule.ReactionRule) {
+	rm.lock.Lock()
+	defer rm.lock.Unlock()
+
 	rules, ok := rm.rm[guildId]
 
 	if !ok {
@@ -60,7 +68,12 @@ func (rm *RuleManager) AddReactionRules(guildId string, reactionRules []rule.Rea
 
 }
 
-func (rm *RuleManager) GetRules(guildId string) (Rules, error) {
+func (rm *RuleManager) GetRules(guildId string, locked bool) (Rules, error) {
+	if !locked {
+		rm.lock.RLock()
+		defer rm.lock.RUnlock()
+	}
+
 	rules, ok := rm.rm[guildId]
 
 	if !ok {
@@ -70,8 +83,12 @@ func (rm *RuleManager) GetRules(guildId string) (Rules, error) {
 	return rules, nil
 }
 
-func (rm *RuleManager) GetReactionRules(guildId string) ([]rule.ReactionRule, error) {
-	rules, err := rm.GetRules(guildId)
+func (rm *RuleManager) GetReactionRules(guildId string, locked bool) ([]rule.ReactionRule, error) {
+	if !locked {
+		rm.lock.RLock()
+		defer rm.lock.RUnlock()
+	}
+	rules, err := rm.GetRules(guildId, true)
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting reaction rules: %w", err)
@@ -123,7 +140,7 @@ func (rm *RuleManager) FetchReactionRules(guildId string) ([]rule.ReactionRule, 
 }
 
 func (rm *RuleManager) PostReactionRules(guildId string, reactionRules []rule.ReactionRule) ([]rule.ReactionRule, error) {
-	existingRules, err := rm.GetReactionRules(guildId)
+	existingRules, err := rm.GetReactionRules(guildId, false)
 
 	if err != nil && !errors.Is(err, ErrRulesNotFound) {
 		return nil, fmt.Errorf("error posting reaction rules: %w", err)

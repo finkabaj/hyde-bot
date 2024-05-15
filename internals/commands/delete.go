@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
@@ -42,8 +40,6 @@ func DeleteCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, 
 			content = "You can't delete default commands"
 		}
 	}
-
-	fmt.Println("content: ", content)
 
 	if content == "" {
 		err := cm.DeleteCommand(s, command.RegisteredCommand, i.GuildID, false)

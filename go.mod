@@ -9,8 +9,8 @@ require (
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/joho/godotenv v1.5.1
-	github.com/stretchr/testify v1.8.4
 	github.com/rs/zerolog v1.32.0
+	github.com/stretchr/testify v1.8.4
 )
 
 require (

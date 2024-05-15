@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -38,7 +39,13 @@ func (c *GuildController) RegisterRoutes(router *chi.Mux) {
 }
 
 func (ec *GuildController) postGuild(w http.ResponseWriter, r *http.Request) {
-	g := r.Context().Value(middleware.ValidateJsonCtxKey).(guild.GuildCreate)
+	g, ok := middleware.JsonFromContext(r.Context()).(guild.GuildCreate)
+
+	if !ok {
+		logger.Error(errors.New("no guild create struct found in context"), map[string]any{"details": "error while getting guild create struct"})
+		common.SendInternalError(w)
+		return
+	}
 
 	newGuild, err := ec.service.CreateGuild(g)
 

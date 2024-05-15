@@ -2,7 +2,6 @@ package events
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 
 	"github.com/bwmarrin/discordgo"
@@ -21,9 +20,7 @@ func HandleDeleteReaction(rm *rules.RuleManager) EventHandler {
 			return
 		}
 
-		reactionRules, err := rm.GetReactionRules(typedEvent.GuildID)
-
-		fmt.Printf("reactionRules: %+v\n", reactionRules)
+		reactionRules, err := rm.GetReactionRules(typedEvent.GuildID, false)
 
 		if err != nil && !errors.Is(err, rules.ErrRulesNotFound) {
 			logger.Debug("Failed to get reaction rules:" + err.Error())
@@ -32,23 +29,33 @@ func HandleDeleteReaction(rm *rules.RuleManager) EventHandler {
 			return
 		}
 
-		fmt.Println(typedEvent.Emoji.ID)
-		fmt.Println(typedEvent.Emoji.Name)
-
-		fmt.Println(emoji.Parse(typedEvent.Emoji.Name))
-
 		if slices.ContainsFunc(reactionRules, func(rule rule.ReactionRule) bool {
 			return rule.EmojiId != "" && typedEvent.Emoji.ID != "" && rule.EmojiId == typedEvent.Emoji.ID
 		}) {
-			s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.ID)
+			err = s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.ID)
+
+			if err != nil {
+				logger.Error(err, map[string]any{"emojiName": typedEvent.Emoji.Name, "emojiId": typedEvent.Emoji.ID})
+			}
+
 			return
 		}
 
 		if slices.ContainsFunc(reactionRules, func(rule rule.ReactionRule) bool {
 			return rule.EmojiName != "" && typedEvent.Emoji.Name != "" && emoji.Parse(rule.EmojiName) == typedEvent.Emoji.Name
 		}) {
-			s.MessageReactionRemove(typedEvent.ChannelID, typedEvent.MessageID, emoji.Parse(typedEvent.Emoji.Name), typedEvent.UserID)
-			return
+			e := ""
+			if typedEvent.Emoji.ID != "" {
+				e = typedEvent.Emoji.Name + ":" + typedEvent.Emoji.ID
+			} else {
+				e = typedEvent.Emoji.Name
+			}
+
+			err = s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, e)
+
+			if err != nil {
+				logger.Error(err, map[string]any{"emojiName": typedEvent.Emoji.Name, "emojiId": typedEvent.Emoji.ID})
+			}
 		}
 	}
 }

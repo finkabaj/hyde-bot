@@ -2,7 +2,7 @@ package events
 
 import (
 	"errors"
-	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -10,7 +10,6 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/finkabaj/hyde-bot/internals/rules"
 	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
-	"github.com/finkabaj/hyde-bot/internals/utils/common"
 	"github.com/finkabaj/hyde-bot/internals/utils/rule"
 )
 
@@ -41,10 +40,6 @@ func HandleSumbitModalReaction(rm *rules.RuleManager) EventHandler {
 			return
 		}
 
-		for _, emoji := range emojies {
-			fmt.Println(emoji.Name, emoji.ID)
-		}
-
 		r := parseModalReactionInput(text, i.Member.User.ID, i.GuildID, emojies)
 
 		if len(r) == 0 {
@@ -54,8 +49,6 @@ func HandleSumbitModalReaction(rm *rules.RuleManager) EventHandler {
 		}
 
 		rRules, err := rm.PostReactionRules(i.GuildID, r)
-
-		fmt.Printf("rRules: %+v\n", rRules)
 
 		if err != nil {
 			if errors.Is(err, rules.ErrIntersectingRules) {
@@ -91,25 +84,28 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 	result := make([]rule.ReactionRule, 0, len(textSplited))
 
 	for _, v := range textSplited {
-		if common.ContainsFieldValue(emojies, "ID", v) {
+		if emoji.Exist(v) {
 			result = append(result, rule.ReactionRule{
-				RuleAuthor: ruleAuthor,
 				GuildId:    guildId,
+				RuleAuthor: ruleAuthor,
+				EmojiName:  v,
+				Actions:    []rule.ReactAction{rule.Delete},
+			})
+		} else if slices.ContainsFunc(emojies, func(e *discordgo.Emoji) bool {
+			return e.ID != "" && e.ID == v
+		}) {
+			result = append(result, rule.ReactionRule{
+				GuildId:    guildId,
+				RuleAuthor: ruleAuthor,
 				EmojiId:    v,
 				Actions:    []rule.ReactAction{rule.Delete},
 			})
-		} else if common.ContainsFieldValue(emojies, "Name", v) {
+		} else if strings.HasPrefix(v, ":") && strings.HasSuffix(v, ":") {
+			emojiName := strings.Trim(v, ":")
 			result = append(result, rule.ReactionRule{
-				RuleAuthor: ruleAuthor,
 				GuildId:    guildId,
-				EmojiName:  v,
-				Actions:    []rule.ReactAction{rule.Delete},
-			})
-		} else if emoji.Exist(v) {
-			result = append(result, rule.ReactionRule{
 				RuleAuthor: ruleAuthor,
-				GuildId:    guildId,
-				EmojiName:  v,
+				EmojiName:  emojiName,
 				Actions:    []rule.ReactAction{rule.Delete},
 			})
 		}
