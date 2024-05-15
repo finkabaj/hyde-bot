@@ -64,6 +64,7 @@ func (rm *RuleManager) AddReactionRules(guildId string, reactionRules []rule.Rea
 	} else {
 		rules.ReactionRules = append(rules.ReactionRules, reactionRules...)
 		rules.HaveReactionRules = true
+		rm.rm[guildId] = rules
 	}
 
 }
