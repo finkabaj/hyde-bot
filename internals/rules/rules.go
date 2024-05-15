@@ -54,19 +54,10 @@ func (rm *RuleManager) AddReactionRules(guildId string, reactionRules []rule.Rea
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
 
-	rules, ok := rm.rm[guildId]
-
-	if !ok {
-		rm.rm[guildId] = Rules{
-			ReactionRules:     reactionRules,
-			HaveReactionRules: true,
-		}
-	} else {
-		rules.ReactionRules = append(rules.ReactionRules, reactionRules...)
-		rules.HaveReactionRules = true
-		rm.rm[guildId] = rules
-	}
-
+	rules := rm.rm[guildId]
+	rules.ReactionRules = append(rules.ReactionRules, reactionRules...)
+	rules.HaveReactionRules = true
+	rm.rm[guildId] = rules
 }
 
 func (rm *RuleManager) GetRules(guildId string, locked bool) (Rules, error) {
