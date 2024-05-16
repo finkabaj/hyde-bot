@@ -4,6 +4,7 @@ import (
 	"errors"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/enescakir/emoji"
@@ -82,6 +83,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 	}
 
 	result := make([]rule.ReactionRule, 0, len(textSplited))
+	// Zero width joiner = 0x200D
 
 	for _, v := range textSplited {
 		if emoji.Exist(v) {
@@ -108,6 +110,38 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 				EmojiName:  emojiName,
 				Actions:    []rule.ReactAction{rule.Delete},
 			})
+		} else {
+			var emojiSequence string
+			b := []byte(v)
+			for i := 0; i < len(b); i++ {
+				r, size := utf8.DecodeRune(b[i:])
+
+				if (r < 0x1F600 || r > 0x1F64F) && (r < 0x1F300 || r > 0x1F5FF) &&
+					(r < 0x1F680 || r > 0x1F6FF) && (r < 0x2600 || r > 0x26FF) &&
+					(r < 0x2700 || r > 0x27BF) && (r < 0xFE00 || r > 0xFE0F) &&
+					(r < 0x1F900 || r > 0x1F9FF) && (r < 0x1F1E6 || r > 0x1F1FF) && r != 0x200D {
+					if emojiSequence != "" {
+						result = append(result, rule.ReactionRule{
+							GuildId:    guildId,
+							RuleAuthor: ruleAuthor,
+							EmojiName:  emojiSequence,
+							Actions:    []rule.ReactAction{rule.Delete},
+						})
+						emojiSequence = ""
+					}
+				} else {
+					emojiSequence += string(r)
+				}
+				i += size - 1
+			}
+			if emojiSequence != "" {
+				result = append(result, rule.ReactionRule{
+					GuildId:    guildId,
+					RuleAuthor: ruleAuthor,
+					EmojiName:  v,
+					Actions:    []rule.ReactAction{rule.Delete},
+				})
+			}
 		}
 	}
 
