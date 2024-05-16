@@ -32,10 +32,17 @@ func HandleDeleteReaction(rm *rules.RuleManager) EventHandler {
 		if slices.ContainsFunc(reactionRules, func(rule rule.ReactionRule) bool {
 			return rule.EmojiId != "" && typedEvent.Emoji.ID != "" && rule.EmojiId == typedEvent.Emoji.ID
 		}) {
-			err = s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, typedEvent.Emoji.ID)
+			e := ""
+			if typedEvent.Emoji.ID != "" {
+				e = typedEvent.Emoji.Name + ":" + typedEvent.Emoji.ID
+			} else {
+				e = typedEvent.Emoji.Name
+			}
+
+			err = s.MessageReactionsRemoveEmoji(typedEvent.ChannelID, typedEvent.MessageID, e)
 
 			if err != nil {
-				logger.Error(err, map[string]any{"emojiName": typedEvent.Emoji.Name, "emojiId": typedEvent.Emoji.ID})
+				logger.Error(err, map[string]any{"emojiName": typedEvent.Emoji.Name, "emojiId": typedEvent})
 			}
 
 			return
