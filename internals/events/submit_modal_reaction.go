@@ -2,6 +2,7 @@ package events
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -16,18 +17,12 @@ import (
 
 func HandleSumbitModalReaction(rm *rules.RuleManager) EventHandler {
 	return func(s *discordgo.Session, event any) {
-		i, ok := event.(*discordgo.InteractionCreate)
+		data, i, err := commandUtils.GetDataFromModalSubmit(event)
 
-		if !ok {
-			logger.Error(errors.New("failed to cast event to *discordgo.InteractionCreate"))
+		if err != nil {
+			logger.Error(fmt.Errorf("error at HandleSumbitModalReaction: %w", err))
 			return
 		}
-
-		if i.Type != discordgo.InteractionModalSubmit {
-			logger.Error(errors.New("incorect type in HandleSumbitModalReaction"))
-		}
-
-		data := i.ModalSubmitData()
 
 		if !strings.HasPrefix(string(data.CustomID), "emoji_ban") {
 			return
@@ -83,7 +78,6 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 	}
 
 	result := make([]rule.ReactionRule, 0, len(textSplited))
-	// Zero width joiner = 0x200D
 
 	for _, v := range textSplited {
 		if emoji.Exist(v) {
@@ -116,6 +110,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 			for i := 0; i < len(b); i++ {
 				r, size := utf8.DecodeRune(b[i:])
 
+				// Check if the rune is not an emoji
 				if (r < 0x1F600 || r > 0x1F64F) && (r < 0x1F300 || r > 0x1F5FF) &&
 					(r < 0x1F680 || r > 0x1F6FF) && (r < 0x2600 || r > 0x26FF) &&
 					(r < 0x2700 || r > 0x27BF) && (r < 0xFE00 || r > 0xFE0F) &&

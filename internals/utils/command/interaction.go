@@ -56,6 +56,9 @@ func FillFields(i *discordgo.InteractionCreate) map[string]any {
 					case *discordgo.TextInput:
 						textInput := action.(*discordgo.TextInput)
 						modalFields["TextInput"] = textInput.Value
+					case *discordgo.SelectMenu:
+						selectMenu := action.(*discordgo.SelectMenu)
+						modalFields["SelectMenu"] = selectMenu.Options
 					}
 				}
 			}

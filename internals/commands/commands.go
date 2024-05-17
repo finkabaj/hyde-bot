@@ -47,13 +47,19 @@ func (cm *CommandManager) RegisterDefaultCommandsToManager() {
 		HelpCommandHandler(s, i, cm)
 	}, "")
 
-	cm.RegisterCommandToManager(DeleteCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		DeleteCommandHandler(s, i, cm)
-	}, guildID)
-
 	cm.RegisterCommandToManager(CreateReactionRuleCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		CreateReactionRuleHandler(s, i, cm.rm)
 	}, guildID)
+
+	cm.RegisterCommandToManager(DeleteReactionRuleCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		DeleteReactionRulesCommandHandler(s, i, cm.rm)
+	}, guildID)
+
+	if os.Getenv("ENV") == "development" {
+		cm.RegisterCommandToManager(DeleteCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			DeleteCommandHandler(s, i, cm)
+		}, guildID)
+	}
 }
 
 // RegisterCommandToManager registers a command in the CommandManager. If guildID is an empty string, the command will be registered globally.

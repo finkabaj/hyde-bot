@@ -20,7 +20,7 @@ var HelpCommand = &discordgo.ApplicationCommand{
 func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, cmdManager *CommandManager) {
 	commands := "Available commands:\n"
 
-	cmds := cmdManager.GetGuildCommands(i.GuildID)
+	cmds := cmdManager.GetGuildCommands(i.GuildID, true)
 
 	if len(cmds) == 0 {
 		commands = "No commands available"
