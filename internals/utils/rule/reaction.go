@@ -17,8 +17,9 @@ const (
 )
 
 type ReactionRule struct {
-	EmojiName  string        `json:"emojiName,omitempty" validate:"omitempty"`
+	EmojiName  string        `json:"emojiName,omitempty" validate:"required"`
 	EmojiId    string        `json:"emojiId,omitempty" validate:"omitempty"`
+	IsCustom   bool          `json:"isCustom" validate:"boolean"`
 	GuildId    string        `json:"guildId" validate:"required"`
 	RuleAuthor string        `json:"ruleAuthor" validate:"required"`
 	Actions    []ReactAction `json:"actions" validate:"dive"`
@@ -26,7 +27,7 @@ type ReactionRule struct {
 
 type DeleteReactionRuleQuery struct {
 	EmojiId   string `json:"emojiId,omitempty"`
-	EmojiName string `json:"emojiName,omitempty"`
+	EmojiName string `json:"emojiName"`
 }
 
 var (

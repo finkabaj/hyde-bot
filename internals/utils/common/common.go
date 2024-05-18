@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -74,6 +75,8 @@ func ValidateSliceOrStruct(w http.ResponseWriter, validate *validator.Validate, 
 		for _, e := range err.(validator.ValidationErrors) {
 			validationErrors[e.Field()] = e.Tag()
 		}
+
+		fmt.Println(validationErrors)
 
 		SendValidationError(w, validationErrors)
 

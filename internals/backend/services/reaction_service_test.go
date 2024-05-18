@@ -28,7 +28,6 @@ func TestCreateReactionRules(t *testing.T) {
 	t.Run("EmojiIdConflict", testCreateReactionRulesEmojiIdConflict)
 	t.Run("EmojiNameConflict", testCreateReactionRulesEmojiNameConflict)
 	t.Run("EmptyEmojiIdAndName", testCreateReactionRulesEmptyEmojiIdAndName)
-	t.Run("EmojiIdAndName", testCreateReactionRulesEmojiIdAndName)
 	t.Run("EmptyActions", testCreateReactionRulesEmptyActions)
 	t.Run("DuplicateActions", testCreateReactionRulesDuplicateActions)
 	t.Run("DbReturnError", testCreateReactionRulesDbReturnError)
@@ -39,7 +38,6 @@ func TestDeleteReactionRules(t *testing.T) {
 	t.Run("MinLen", testDeleteReactionRulesMinLen)
 	t.Run("NotFound", testDeleteReactionRulesNotFound)
 	t.Run("HaveNoEmojiIdAndName", testDeleteReactionRulesHaveNoEmojiIdAndName)
-	t.Run("Incompatible", testDeleteReactionRulesIncompatible)
 	t.Run("DbReturnError", testDeleteReactionRulesDbReturnError)
 }
 
@@ -317,31 +315,6 @@ func testCreateReactionRulesEmptyEmojiIdAndName(t *testing.T) {
 	mockDb.AssertNotCalled(t, "CreateReactionRules")
 }
 
-func testCreateReactionRulesEmojiIdAndName(t *testing.T) {
-	gId := "beepboop"
-	rules := []rule.ReactionRule{
-		{
-			GuildId:    gId,
-			RuleAuthor: "fsdf",
-			EmojiId:    "123",
-			EmojiName:  "🚌",
-			Actions:    []rule.ReactAction{0},
-		},
-	}
-
-	mockGuildService.On("GetGuild", gId).Return(guild.Guild{}, nil)
-	mockDb.On("ReadReactionRules", gId).Return([]rule.ReactionRule{}, nil)
-
-	actualResponse, err := mockReactionService.CreateReactionRules(rules)
-
-	assert.Equal(t, []rule.ReactionRule{}, actualResponse)
-	assert.Equal(t, rule.ErrRuleReactionIncompatible, err)
-
-	mockGuildService.AssertExpectations(t)
-	mockDb.AssertExpectations(t)
-	mockDb.AssertNotCalled(t, "CreateReactionRules")
-}
-
 func testCreateReactionRulesEmptyActions(t *testing.T) {
 	gId := "beepboop"
 	rules := []rule.ReactionRule{
@@ -480,25 +453,6 @@ func testDeleteReactionRulesHaveNoEmojiIdAndName(t *testing.T) {
 	err := mockReactionService.DeleteReactionRules(rules, gId)
 
 	assert.Equal(t, common.ErrBadRequest, err)
-
-	mockGuildService.AssertExpectations(t)
-	mockDb.AssertNotCalled(t, "DeleteReactionRules")
-}
-
-func testDeleteReactionRulesIncompatible(t *testing.T) {
-	gId := "del"
-	rules := []rule.DeleteReactionRuleQuery{
-		{
-			EmojiId:   "1",
-			EmojiName: "a",
-		},
-	}
-
-	mockGuildService.On("GetGuild", gId).Return(guild.Guild{}, nil)
-
-	err := mockReactionService.DeleteReactionRules(rules, gId)
-
-	assert.Equal(t, rule.ErrRuleReactionIncompatible, err)
 
 	mockGuildService.AssertExpectations(t)
 	mockDb.AssertNotCalled(t, "DeleteReactionRules")

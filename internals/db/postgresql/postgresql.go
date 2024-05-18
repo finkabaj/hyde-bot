@@ -93,6 +93,7 @@ func (p *Postgresql) setup() (err error) {
     CREATE TABLE IF NOT EXISTS "reactionRules" (
       "emojiId" VARCHAR(255),
       "emojiName" VARCHAR(255),
+      "isCustom" BOOLEAN NOT NULL DEFAULT FALSE,
       "guildId" VARCHAR(255) NOT NULL,
       "ruleAuthor" VARCHAR(255) NOT NULL,
       "actions" INTEGER[] NOT NULL,

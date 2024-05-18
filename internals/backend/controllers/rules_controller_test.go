@@ -25,7 +25,6 @@ func init() {
 func TestCreateReactionRules(t *testing.T) {
 	t.Run("Positive", testCreateReactionRulePositive)
 	t.Run("NegativeConflict", testCreateReactionRuleNegativeConflict)
-	t.Run("NegativeIncompatible", testCreateReactionRuleNegativeIncompatible)
 	t.Run("NegativeBadRequest", testCreateReactionRuleNegativeBadRequest)
 	t.Run("NegativeInternalError", testCreateReactionRuleNegativeInternalError)
 }
@@ -41,7 +40,6 @@ func TestDeleteReactionRules(t *testing.T) {
 	t.Run("Positive", testDeleteReactionRulesPositive)
 	t.Run("NegativeNotFound", testDeleteReactionRulesNotFound)
 	t.Run("NegativeInternalError", testDeleteReactionRulesInternalError)
-	t.Run("NegativeIncompatible", testDeleteReactionRulesIncompatible)
 	t.Run("BadRequest", testDeleteReactionRulesBadRequest)
 }
 
@@ -49,18 +47,22 @@ func testCreateReactionRulePositive(t *testing.T) {
 	expectedResponse := []rule.ReactionRule{
 		{
 			EmojiName:  "🤰",
+			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjSX",
 			GuildId:    "QaK6KDIezh0ckrQhySh",
 			Actions:    []rule.ReactAction{rule.Delete, rule.Ban},
 		},
 		{
 			EmojiName:  "💦",
+			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjSD",
 			GuildId:    "QaK6KDIezh0ckrQhyS",
 			Actions:    []rule.ReactAction{rule.Ban},
 		},
 		{
 			EmojiId:    "12321",
+			EmojiName:  "bust",
+			IsCustom:   true,
 			RuleAuthor: "QaK6KDIezh0ckrQhyShD",
 			GuildId:    "QaK6KDIezh0ckrQhyS",
 			Actions:    []rule.ReactAction{rule.Kick},
@@ -91,6 +93,7 @@ func testCreateReactionRuleNegativeInternalError(t *testing.T) {
 	sendedBody := []rule.ReactionRule{
 		{
 			EmojiName:  "🤰",
+			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjIE",
 			GuildId:    "QaK6KDIezh0ckrQhy",
 			Actions:    []rule.ReactAction{rule.Ban},
@@ -124,6 +127,7 @@ func testCreateReactionRuleNegativeConflict(t *testing.T) {
 	sendedBody := []rule.ReactionRule{
 		{
 			EmojiName:  "🤰",
+			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjSX",
 			GuildId:    "QaK6KDIezh0ckrQhysh",
 			Actions:    []rule.ReactAction{rule.Ban},
@@ -131,40 +135,6 @@ func testCreateReactionRuleNegativeConflict(t *testing.T) {
 	}
 
 	mockReactionService.On("CreateReactionRules", sendedBody).Return([]rule.ReactionRule{}, rule.ErrRuleReactionConflict)
-
-	var byf bytes.Buffer
-	json.NewEncoder(&byf).Encode(sendedBody)
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/rules/reaction/", &byf)
-	r.ServeHTTP(rr, req)
-	defer rr.Result().Body.Close()
-
-	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, &actualResponse)
-
-	assert.Equal(t, http.StatusConflict, rr.Code)
-	assert.Equal(t, expectedResponse, &actualResponse)
-
-	mockReactionService.AssertExpectations(t)
-}
-
-func testCreateReactionRuleNegativeIncompatible(t *testing.T) {
-	expectedResponse := common.NewErrorResponseBuilder(rule.ErrRuleReactionIncompatible).
-		SetMessage("either emoji name or emoji id must be provided").
-		SetStatus(http.StatusConflict).
-		Get()
-	sendedBody := []rule.ReactionRule{
-		{
-			EmojiName:  "🤰",
-			EmojiId:    "asdsad",
-			RuleAuthor: "J3nxJ5WHIoHJinXjINC",
-			GuildId:    "QaK6KDIezh0ckrQhysh",
-			Actions:    []rule.ReactAction{rule.Kick},
-		},
-	}
-
-	mockReactionService.On("CreateReactionRules", sendedBody).Return([]rule.ReactionRule{}, rule.ErrRuleReactionIncompatible)
 
 	var byf bytes.Buffer
 	json.NewEncoder(&byf).Encode(sendedBody)
@@ -191,6 +161,7 @@ func testCreateReactionRuleNegativeBadRequest(t *testing.T) {
 	sendedBody := []rule.ReactionRule{
 		{
 			EmojiName:  "🤰",
+			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjxx",
 			GuildId:    "QaK6KDIezh0ckrQhyxx",
 			Actions:    []rule.ReactAction{rule.Ban},
@@ -408,37 +379,6 @@ func testDeleteReactionRulesInternalError(t *testing.T) {
 	common.UnmarshalBody(rr.Result().Body, &actualResponse)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Equal(t, expectedResponse, &actualResponse)
-
-	mockReactionService.AssertExpectations(t)
-}
-
-func testDeleteReactionRulesIncompatible(t *testing.T) {
-	expectedResponse := common.NewErrorResponseBuilder(rule.ErrRuleReactionIncompatible).
-		SetMessage("either emoji name or emoji id must be provided").
-		SetStatus(http.StatusConflict).
-		Get()
-	query := []rule.DeleteReactionRuleQuery{
-		{
-			EmojiName: "🤰",
-			EmojiId:   "123",
-		},
-	}
-	gId := "QaK6KDIezh0ckrQIN"
-
-	encodedQuery := rule.EncodeDeleteReactQuery(query)
-
-	mockReactionService.On("DeleteReactionRules", query, gId).Return(rule.ErrRuleReactionIncompatible)
-
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest("DELETE", fmt.Sprintf("/rules/reaction/%s?%s", gId, encodedQuery), nil)
-	r.ServeHTTP(rr, req)
-	defer rr.Result().Body.Close()
-
-	var actualResponse common.ErrorResponse
-	common.UnmarshalBody(rr.Result().Body, &actualResponse)
-
-	assert.Equal(t, http.StatusConflict, rr.Code)
 	assert.Equal(t, expectedResponse, &actualResponse)
 
 	mockReactionService.AssertExpectations(t)
