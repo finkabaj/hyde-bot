@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
 	"github.com/finkabaj/hyde-bot/internals/rules"
+	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
 type Command struct {
@@ -19,18 +20,20 @@ type Command struct {
 }
 
 type CommandManager struct {
-	commands map[string]map[string]*Command // commands[name][guildID] = command
-	rm       *rules.RuleManager
-	lock     sync.RWMutex
+	commands            map[string]map[string]*Command // commands[name][guildID] = command
+	messageInteractions *commandUtils.MessageInteractions
+	rm                  *rules.RuleManager
+	lock                sync.RWMutex
 }
 
 var cmdManagerInstance *CommandManager
 
-func NewCommandManager(rm *rules.RuleManager) *CommandManager {
+func NewCommandManager(rm *rules.RuleManager, messageInteractions *commandUtils.MessageInteractions) *CommandManager {
 	if cmdManagerInstance == nil {
 		cmdManagerInstance = &CommandManager{
-			commands: make(map[string]map[string]*Command),
-			rm:       rm,
+			commands:            make(map[string]map[string]*Command),
+			messageInteractions: messageInteractions,
+			rm:                  rm,
 		}
 	}
 	return cmdManagerInstance
@@ -52,7 +55,7 @@ func (cm *CommandManager) RegisterDefaultCommandsToManager() {
 	}, guildID)
 
 	cm.RegisterCommandToManager(DeleteReactionRuleCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		DeleteReactionRulesCommandHandler(s, i, cm.rm)
+		DeleteReactionRulesCommandHandler(s, i, cm.rm, cm.messageInteractions)
 	}, guildID)
 
 	if os.Getenv("ENV") == "development" {

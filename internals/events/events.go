@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/commands"
 	"github.com/finkabaj/hyde-bot/internals/rules"
+	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
 type EventHandler func(s *discordgo.Session, event interface{})
@@ -19,21 +20,24 @@ type Event struct {
 }
 
 type EventManager struct {
-	rm     *rules.RuleManager
-	cm     *commands.CommandManager
-	Events map[string]map[string]*Event // Events[type][guildID] = event
-	client *http.Client
+	rm                  *rules.RuleManager
+	cm                  *commands.CommandManager
+	messageInteractions *commandUtils.MessageInteractions
+	Events              map[string]map[string]*Event // Events[type][guildID] = event
+	client              *http.Client
 }
 
 var em *EventManager
 
-func NewEventManager(rm *rules.RuleManager, cm *commands.CommandManager, client *http.Client) *EventManager {
+func NewEventManager(rm *rules.RuleManager, cm *commands.CommandManager,
+	client *http.Client, messageInteractions *commandUtils.MessageInteractions) *EventManager {
 	if em == nil {
 		return &EventManager{
-			rm:     rm,
-			cm:     cm,
-			Events: make(map[string]map[string]*Event),
-			client: client,
+			rm:                  rm,
+			cm:                  cm,
+			messageInteractions: messageInteractions,
+			Events:              make(map[string]map[string]*Event),
+			client:              client,
 		}
 	}
 	return em
@@ -50,7 +54,7 @@ func (em *EventManager) RegisterDefaultEvents() {
 	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate(em.cm), guildID)
 	em.RegisterEventHandler("GuildCreate", HandleGuildCreate(em.rm, em.client), "")
 	em.RegisterEventHandler("ModalSubmitReaction", HandleSumbitModalReaction(em.rm), guildID)
-	em.RegisterEventHandler("ModalSubmitDeleteReaction", HandleSubmitDeleteReactionModal(em.rm), guildID)
+	em.RegisterEventHandler("MessageSubmitDeleteReactions", HandleSubmitDeleteReactionModal(em.rm, em.messageInteractions), guildID)
 }
 
 // RegisterEventHandler registers an event handler for a specific guild.
@@ -97,13 +101,16 @@ func (em *EventManager) HandleEvent(s *discordgo.Session, event interface{}) {
 // getEventType returns the type of the event based on its underlying struct.
 func getEventType(event interface{}) string {
 	t := reflect.TypeOf(event)
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
 	if i, ok := event.(*discordgo.InteractionCreate); ok {
-		if i.Type == discordgo.InteractionModalSubmit {
+		switch i.Type {
+		case discordgo.InteractionModalSubmit:
 			return "ModalSubmitReaction"
+		case discordgo.InteractionMessageComponent:
+			return "MessageSubmitDeleteReactions"
 		}
 	}
 

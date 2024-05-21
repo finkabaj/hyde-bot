@@ -6,8 +6,8 @@ import (
 	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 )
 
-var dmHelpPermission = true
-var memberHelpPermission int64 = discordgo.PermissionAllText
+var dmHelpPermission = false
+var memberHelpPermission int64 = discordgo.PermissionSendMessages
 
 var HelpCommand = &discordgo.ApplicationCommand{
 	Name:                     "help",
@@ -17,6 +17,7 @@ var HelpCommand = &discordgo.ApplicationCommand{
 	DefaultMemberPermissions: &memberHelpPermission,
 }
 
+// TODO: add a way to show only the commands that the user has permission to use
 func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, cmdManager *CommandManager) {
 	commands := "Available commands:\n"
 

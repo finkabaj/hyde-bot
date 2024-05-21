@@ -84,7 +84,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 			result = append(result, rule.ReactionRule{
 				GuildId:    guildId,
 				RuleAuthor: ruleAuthor,
-				EmojiName:  v,
+				EmojiName:  emoji.Parse(v),
 				IsCustom:   false,
 				Actions:    []rule.ReactAction{rule.Delete},
 			})
@@ -100,16 +100,24 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 				Actions:    []rule.ReactAction{rule.Delete},
 			})
 		} else if strings.HasPrefix(v, ":") && strings.HasSuffix(v, ":") {
-			emojiName := strings.Trim(v, ":")
+			eId := ""
+			eParsed := strings.Trim(v, ":")
+			i := slices.IndexFunc(emojies, func(e *discordgo.Emoji) bool {
+				return e.Name == eParsed
+			})
+			if i != -1 {
+				eId = emojies[i].ID
+			} else {
+				return nil
+			}
+
 			result = append(result, rule.ReactionRule{
 				GuildId:    guildId,
 				RuleAuthor: ruleAuthor,
-				EmojiName:  emojiName,
-				EmojiId: emojies[slices.IndexFunc(emojies, func(e *discordgo.Emoji) bool {
-					return e.Name == emojiName
-				})].ID,
-				IsCustom: true,
-				Actions:  []rule.ReactAction{rule.Delete},
+				EmojiName:  eParsed,
+				EmojiId:    eId,
+				IsCustom:   true,
+				Actions:    []rule.ReactAction{rule.Delete},
 			})
 		} else {
 			var emojiSequence string

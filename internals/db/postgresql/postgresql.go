@@ -209,7 +209,7 @@ func (p *Postgresql) CreateReactionRules(rules []rule.ReactionRule) ([]rule.Reac
 
 	copyCount, err := p.pool.CopyFrom(ctx,
 		pgx.Identifier{"reactionRules"},
-		[]string{"emojiName", "emojiId", "guildId", "ruleAuthor", "actions"},
+		[]string{"emojiName", "emojiId", "isCustom", "guildId", "ruleAuthor", "actions"},
 		pgx.CopyFromRows(rows),
 	)
 

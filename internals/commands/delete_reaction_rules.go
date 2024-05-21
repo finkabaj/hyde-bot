@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/logger"
@@ -10,17 +11,40 @@ import (
 )
 
 var dmDeleteReactionRulesPermision = false
+
 var deleteReactionRulesPermission int64 = discordgo.PermissionAdministrator
 
 var DeleteReactionRuleCommand = &discordgo.ApplicationCommand{
-	Name:                     "девасеризация",
-	Description:              "Delete reaction rules",
+	Name:                     "delete-reaction-rules",
+	Description:              "Delete reaction rules for the server",
 	Type:                     discordgo.ChatApplicationCommand,
 	DMPermission:             &dmDeleteReactionRulesPermision,
 	DefaultMemberPermissions: &deleteReactionRulesPermission,
 }
 
-func DeleteReactionRulesCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, rm *rules.RuleManager) {
+func DeleteMessageReactionDeleteSelect(s *discordgo.Session, i *discordgo.InteractionCreate,
+	messageInteractions *commandUtils.MessageInteractions) error {
+	i, ok := messageInteractions.GetMessageInteraction(i.Member.User.ID)
+
+	if !ok {
+		return nil
+	}
+
+	err := s.InteractionResponseDelete(i.Interaction)
+
+	if err != nil {
+		return fmt.Errorf("failed to delete message in deleteMessageReationRules: %w", err)
+	}
+
+	messageInteractions.DeleteMessageID(i.Member.User.ID)
+
+	return nil
+}
+
+func DeleteReactionRulesCommandHandler(s *discordgo.Session,
+	i *discordgo.InteractionCreate, rm *rules.RuleManager, messageInteractions *commandUtils.MessageInteractions) {
+	DeleteMessageReactionDeleteSelect(s, i, messageInteractions)
+
 	opts, err := createSelectMenuOptions(rm, i.GuildID)
 
 	if err != nil {
@@ -32,16 +56,16 @@ func DeleteReactionRulesCommandHandler(s *discordgo.Session, i *discordgo.Intera
 	minValue := 1
 
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseModal,
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			CustomID: "emoji_unban" + i.Member.User.ID,
-			Title:    "Не пизда",
+			Content: "Select the reaction rules you want to delete",
+			Flags:   1 << 6,
 			Components: []discordgo.MessageComponent{
 				discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
 						discordgo.SelectMenu{
-							CustomID:    "emoji_unban_select" + i.Member.User.ID,
-							Placeholder: "select emoji to delete rules",
+							CustomID:    "delete_reaction_rules",
+							Placeholder: "Select tags to search on StackOverflow",
 							MinValues:   &minValue,
 							MaxValues:   len(opts),
 							Options:     opts,
@@ -54,7 +78,28 @@ func DeleteReactionRulesCommandHandler(s *discordgo.Session, i *discordgo.Intera
 
 	if err != nil {
 		logger.Error(err, map[string]any{"details": "failed to respond to delete reaction rules command"})
+		return
 	}
+
+	messageInteractions.SetMessageID(i.Member.User.ID, i)
+
+	go func() {
+		<-time.After(30 * time.Second)
+
+		if _, ok := messageInteractions.GetMessageInteraction(i.Member.User.ID); ok {
+			content := "Время ожидания истекло"
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content:    &content,
+				Components: &[]discordgo.MessageComponent{},
+			})
+
+			if err != nil {
+				//if user spams the command, the bot will try to edit the message that was already deleted
+				//so this error is expected
+				logger.Error(err, map[string]any{"details": "failed to follow up message in delete reaction rules command"})
+			}
+		}
+	}()
 }
 
 func createSelectMenuOptions(rm *rules.RuleManager, guildId string) ([]discordgo.SelectMenuOption, error) {
@@ -69,14 +114,21 @@ func createSelectMenuOptions(rm *rules.RuleManager, guildId string) ([]discordgo
 	for _, rule := range rRules {
 		if rule.EmojiId != "" {
 			options = append(options, discordgo.SelectMenuOption{
-				Label: rule.EmojiId,
-				Value: rule.EmojiId,
+				Label: "server emoji",
+				Value: fmt.Sprintf("<:%s:%s>", rule.EmojiName, rule.EmojiId),
+				Emoji: discordgo.ComponentEmoji{
+					ID:   rule.EmojiId,
+					Name: rule.EmojiName,
+				},
 			})
 
 		} else {
 			options = append(options, discordgo.SelectMenuOption{
-				Label: rule.EmojiName,
-				Value: rule.EmojiName,
+				Label: "ordinary emoji",
+				Value: fmt.Sprintf("<:%s:NULL:>", rule.EmojiName),
+				Emoji: discordgo.ComponentEmoji{
+					Name: rule.EmojiName,
+				},
 			})
 		}
 	}
