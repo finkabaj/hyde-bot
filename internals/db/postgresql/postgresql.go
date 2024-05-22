@@ -271,12 +271,25 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 
-	foundRules, err := pgx.CollectRows(rows, pgx.RowToStructByName[rule.ReactionRule])
+	var foundRules []rule.ReactionRule
+	for rows.Next() {
+		var foundRule rule.ReactionRule
+		var actions []rule.ReactAction
+		err = rows.Scan(&foundRule.EmojiId, &foundRule.EmojiName, &foundRule.IsCustom, &foundRule.GuildId, &foundRule.RuleAuthor, &actions)
+		if err != nil {
+			p.logger.Error(err, map[string]any{"details": "error while scanning rows in GetReactionRules"})
+			return []rule.ReactionRule{}, common.ErrInternal
+		}
+		copy(foundRule.Actions[:], actions)
+		foundRules = append(foundRules, foundRule)
+	}
 
-	if err == pgx.ErrNoRows {
+	//foundRules, err := pgx.CollectRows(rows, pgx.RowToStructByName[rule.ReactionRule])
+
+	if rows.Err() == pgx.ErrNoRows {
 		return []rule.ReactionRule{}, common.ErrNotFound
-	} else if err != nil {
-		p.logger.Error(err, map[string]any{"details": "error while collecting rows in GetReactionRules"})
+	} else if rows.Err() != nil {
+		p.logger.Error(rows.Err(), map[string]any{"details": "error while collecting rows in GetReactionRules"})
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 

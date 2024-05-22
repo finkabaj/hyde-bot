@@ -12,7 +12,19 @@ type Guild struct {
 	OwnerId string `json:"ownerId"`
 }
 
+func (g GuildCreate) Compare(a GuildCreate) int {
+	if g.GuildId != a.GuildId {
+		return -1
+	}
+
+	if g.OwnerId != a.OwnerId {
+		return -1
+	}
+
+	return 0
+}
+
 var (
 	ErrGuildConflict = errors.New("guild already exists")
-	EmptyGuildId     = errors.New("guild id not provided")
+	ErrEmptyGuildId  = errors.New("guild id not provided")
 )

@@ -18,6 +18,8 @@ import (
 var mockReactionService *mogs.MockReactionService = mogs.NewMockReactionService()
 var rc *RulesController = NewRulesController(mockReactionService, mogs.NewMockLogger())
 
+const rac = rule.ReactActionCount
+
 func init() {
 	rc.RegisterRoutes(r)
 }
@@ -50,14 +52,14 @@ func testCreateReactionRulePositive(t *testing.T) {
 			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjSX",
 			GuildId:    "QaK6KDIezh0ckrQhySh",
-			Actions:    []rule.ReactAction{rule.Delete, rule.Ban},
+			Actions:    [rac]rule.ReactAction{rule.Delete, rule.Ban},
 		},
 		{
 			EmojiName:  "💦",
 			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjSD",
 			GuildId:    "QaK6KDIezh0ckrQhyS",
-			Actions:    []rule.ReactAction{rule.Ban},
+			Actions:    [rac]rule.ReactAction{rule.Ban},
 		},
 		{
 			EmojiId:    "12321",
@@ -65,7 +67,7 @@ func testCreateReactionRulePositive(t *testing.T) {
 			IsCustom:   true,
 			RuleAuthor: "QaK6KDIezh0ckrQhyShD",
 			GuildId:    "QaK6KDIezh0ckrQhyS",
-			Actions:    []rule.ReactAction{rule.Kick},
+			Actions:    [rac]rule.ReactAction{rule.Kick},
 		},
 	}
 
@@ -96,7 +98,7 @@ func testCreateReactionRuleNegativeInternalError(t *testing.T) {
 			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjIE",
 			GuildId:    "QaK6KDIezh0ckrQhy",
-			Actions:    []rule.ReactAction{rule.Ban},
+			Actions:    [rac]rule.ReactAction{rule.Ban},
 		},
 	}
 
@@ -130,7 +132,7 @@ func testCreateReactionRuleNegativeConflict(t *testing.T) {
 			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjSX",
 			GuildId:    "QaK6KDIezh0ckrQhysh",
-			Actions:    []rule.ReactAction{rule.Ban},
+			Actions:    [rac]rule.ReactAction{rule.Ban},
 		},
 	}
 
@@ -164,7 +166,7 @@ func testCreateReactionRuleNegativeBadRequest(t *testing.T) {
 			IsCustom:   false,
 			RuleAuthor: "J3nxJ5WHIoHJinXjxx",
 			GuildId:    "QaK6KDIezh0ckrQhyxx",
-			Actions:    []rule.ReactAction{rule.Ban},
+			Actions:    [rac]rule.ReactAction{rule.Ban},
 		},
 	}
 
@@ -193,19 +195,19 @@ func testGetReactionRulesPositive(t *testing.T) {
 			EmojiName:  "🤰",
 			RuleAuthor: "J3nxJ5WHIoHJinXjSD",
 			GuildId:    "QaK6KDIezh0ckrQhy",
-			Actions:    []rule.ReactAction{rule.Ban},
+			Actions:    [rac]rule.ReactAction{rule.Ban},
 		},
 		{
 			EmojiName:  "💦",
 			RuleAuthor: "J3nxJ5WHIoHJinXjSD",
 			GuildId:    "QaK6KDIezh0ckrQhy",
-			Actions:    []rule.ReactAction{rule.Ban, rule.Kick},
+			Actions:    [rac]rule.ReactAction{rule.Ban, rule.Kick},
 		},
 		{
 			EmojiId:    "12321",
 			RuleAuthor: "QaK6KDIezh0ckrQhyShD",
 			GuildId:    "QaK7KDIezh0ckrQhy",
-			Actions:    []rule.ReactAction{rule.Ban},
+			Actions:    [rac]rule.ReactAction{rule.Ban},
 		},
 	}
 

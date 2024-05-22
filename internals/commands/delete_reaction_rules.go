@@ -41,9 +41,15 @@ func DeleteMessageReactionDeleteSelect(s *discordgo.Session, i *discordgo.Intera
 	return nil
 }
 
+// in my opinion, interacion delete and edit works strange in this handler but who cares
+
 func DeleteReactionRulesCommandHandler(s *discordgo.Session,
 	i *discordgo.InteractionCreate, rm *rules.RuleManager, messageInteractions *commandUtils.MessageInteractions) {
-	DeleteMessageReactionDeleteSelect(s, i, messageInteractions)
+	err := DeleteMessageReactionDeleteSelect(s, i, messageInteractions)
+
+	if err != nil {
+		logger.Error(err, map[string]any{"details": "failed to delete message"})
+	}
 
 	opts, err := createSelectMenuOptions(rm, i.GuildID)
 
@@ -86,8 +92,8 @@ func DeleteReactionRulesCommandHandler(s *discordgo.Session,
 	go func() {
 		<-time.After(30 * time.Second)
 
-		if _, ok := messageInteractions.GetMessageInteraction(i.Member.User.ID); ok {
-			content := "Время ожидания истекло"
+		if i, ok := messageInteractions.GetMessageInteraction(i.Member.User.ID); ok {
+			content := "You took too long to respond, please try again."
 			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content:    &content,
 				Components: &[]discordgo.MessageComponent{},
@@ -96,6 +102,8 @@ func DeleteReactionRulesCommandHandler(s *discordgo.Session,
 			if err != nil {
 				//if user spams the command, the bot will try to edit the message that was already deleted
 				//so this error is expected
+				//don't try to add messageInteractions.DeleteMessageID(i.Member.User.ID) here
+				//this will cause last message to not be deleted
 				logger.Error(err, map[string]any{"details": "failed to follow up message in delete reaction rules command"})
 			}
 		}
@@ -112,10 +120,10 @@ func createSelectMenuOptions(rm *rules.RuleManager, guildId string) ([]discordgo
 	}
 
 	for _, rule := range rRules {
-		if rule.EmojiId != "" {
+		if rule.IsCustom {
 			options = append(options, discordgo.SelectMenuOption{
 				Label: "server emoji",
-				Value: fmt.Sprintf("<:%s:%s>", rule.EmojiName, rule.EmojiId),
+				Value: fmt.Sprintf("%s:%s", rule.EmojiName, rule.EmojiId),
 				Emoji: discordgo.ComponentEmoji{
 					ID:   rule.EmojiId,
 					Name: rule.EmojiName,
@@ -125,7 +133,7 @@ func createSelectMenuOptions(rm *rules.RuleManager, guildId string) ([]discordgo
 		} else {
 			options = append(options, discordgo.SelectMenuOption{
 				Label: "ordinary emoji",
-				Value: fmt.Sprintf("<:%s:NULL:>", rule.EmojiName),
+				Value: fmt.Sprintf("%s:NULL", rule.EmojiName),
 				Emoji: discordgo.ComponentEmoji{
 					Name: rule.EmojiName,
 				},

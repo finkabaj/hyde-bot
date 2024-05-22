@@ -68,9 +68,7 @@ func (rs *ReactionService) CreateReactionRules(rules []rule.ReactionRule) ([]rul
 			return []rule.ReactionRule{}, common.ErrBadRequest
 		}
 
-		actionsLen := len(v.Actions)
-
-		if actionsLen == 0 || len(common.RemoveDuplicates(v.Actions)) != actionsLen {
+		if common.HaveDuplicatesActions(v.Actions) {
 			return []rule.ReactionRule{}, common.ErrBadRequest
 		}
 	}

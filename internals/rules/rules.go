@@ -25,6 +25,11 @@ type Rules struct {
 	HaveReactionRules bool                `json:"haveReactionRules"`
 }
 
+type RulesDeleteDto struct {
+	EmojiName string
+	EmojiId   string
+}
+
 type RuleManager struct {
 	rm     map[string]Rules
 	client *http.Client
@@ -48,6 +53,20 @@ func (rm *RuleManager) AddRules(guildId string, rules Rules) {
 	defer rm.lock.Unlock()
 
 	rm.rm[guildId] = rules
+}
+
+func (rm *RuleManager) DeleteReactionRules(guildID string, reactionRules []rule.ReactionRule) {
+	rm.lock.Lock()
+	defer rm.lock.Unlock()
+
+	rules := rm.rm[guildID]
+	for _, rule := range reactionRules {
+		for i, r := range rules.ReactionRules {
+			if r.EmojiName == rule.EmojiName && r.EmojiId == rule.EmojiId {
+				rules.ReactionRules = append(rules.ReactionRules[:i], rules.ReactionRules[i+1:]...)
+			}
+		}
+	}
 }
 
 func (rm *RuleManager) AddReactionRules(guildId string, reactionRules []rule.ReactionRule) {
@@ -186,4 +205,69 @@ func (rm *RuleManager) PostReactionRules(guildId string, reactionRules []rule.Re
 	}
 
 	return rRules, nil
+}
+
+func (rm *RuleManager) DeleteReactionRulesApi(guildId string, deleteDto []RulesDeleteDto) error {
+	rRules, err := rm.GetReactionRules(guildId, false)
+
+	if err != nil {
+		return fmt.Errorf("error deleting reaction rules: %w", err)
+	}
+
+	query := make([]rule.DeleteReactionRuleQuery, len(deleteDto))
+
+	for _, dto := range deleteDto {
+		for _, rRule := range rRules {
+			if rRule.EmojiName == dto.EmojiName && rRule.EmojiId == dto.EmojiId {
+				query = append(query, rule.DeleteReactionRuleQuery{
+					EmojiName: dto.EmojiName,
+					EmojiId:   dto.EmojiId,
+				})
+			}
+		}
+	}
+
+	if len(query) != len(deleteDto) {
+		return errors.New("some rules are not found")
+	}
+
+	queryString := rule.EncodeDeleteReactQuery(query)
+
+	rRulesApiUrl := common.GetApiUrl(os.Getenv("API_HOST"), os.Getenv("API_PORT"), "/rules/reaction/"+guildId+"?"+queryString)
+
+	req, err := http.NewRequest(http.MethodDelete, rRulesApiUrl, nil)
+
+	if err != nil {
+		return fmt.Errorf("error deleting reaction rules: %w", err)
+	}
+
+	res, err := rm.client.Do(req)
+
+	if err != nil {
+		return fmt.Errorf("error deleting reaction rules: %w", err)
+	}
+
+	body := res.Body
+	defer body.Close()
+	b, err := io.ReadAll(body)
+
+	if err != nil {
+		logger.Error(err, map[string]any{"details": "error while reading response body"})
+		return fmt.Errorf("error deleting reaction rules: %w", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		var errRes common.ErrorResponse
+
+		if err = common.UnmarshalBodyBytes(b, &errRes); err != nil {
+			logger.Error(errors.New("error posting unmarshaling reaction rules error"))
+			return fmt.Errorf("error deleting reaction rules: %w", err)
+		}
+
+		logger.Debug("Error response", map[string]any{"status": res.StatusCode, "error": errRes.Error, "validationErrors": errRes.ValidationErrors, "message": errRes.Message})
+
+		return errors.New(errRes.Error)
+	}
+
+	return nil
 }

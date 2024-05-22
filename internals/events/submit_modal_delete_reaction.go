@@ -1,7 +1,7 @@
 package events
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/commands"
@@ -28,10 +28,53 @@ func HandleSubmitDeleteReactionModal(rm *rules.RuleManager, messageInteractions 
 			return
 		}
 
-		fmt.Printf("%+v\n", data)
+		deleteRulesDto := make([]rules.RulesDeleteDto, len(data.Values))
+		for _, v := range data.Values {
+			vSplit := strings.Split(v, ":")
+			emojiName := vSplit[0]
+			emojiID := vSplit[1]
 
-		logger.Info("Delete reaction rules modal submitted", map[string]any{"user": i.Member.User.ID})
+			if emojiID == "NULL" {
+				emojiID = ""
+			}
 
-		commands.DeleteMessageReactionDeleteSelect(s, i, messageInteractions)
+			deleteRulesDto = append(deleteRulesDto, rules.RulesDeleteDto{
+				EmojiName: emojiName,
+				EmojiId:   emojiID,
+			})
+		}
+
+		err := rm.DeleteReactionRulesApi(i.GuildID, deleteRulesDto)
+
+		if err != nil {
+			logger.Error(err, map[string]any{"details": "failed to delete reaction rules"})
+
+			i, ok := messageInteractions.GetMessageInteraction(i.Member.User.ID)
+
+			if !ok {
+				return
+			}
+
+			content := "Failed to delete reaction rules"
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content:    &content,
+				Components: &[]discordgo.MessageComponent{},
+			})
+
+			if err != nil {
+				logger.Error(err, map[string]any{"details": "failed to edit interaction response"})
+				return
+			}
+
+			messageInteractions.DeleteMessageID(i.Member.User.ID)
+
+			return
+		}
+
+		err = commands.DeleteMessageReactionDeleteSelect(s, i, messageInteractions)
+
+		if err != nil {
+			logger.Error(err, map[string]any{"details": "failed to delete message"})
+		}
 	}
 }

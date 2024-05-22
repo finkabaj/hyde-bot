@@ -79,6 +79,8 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 
 	result := make([]rule.ReactionRule, 0, len(textSplited))
 
+	const rac = rule.ReactActionCount
+
 	for _, v := range textSplited {
 		if emoji.Exist(v) {
 			result = append(result, rule.ReactionRule{
@@ -86,7 +88,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 				RuleAuthor: ruleAuthor,
 				EmojiName:  emoji.Parse(v),
 				IsCustom:   false,
-				Actions:    []rule.ReactAction{rule.Delete},
+				Actions:    [rac]rule.ReactAction{rule.Delete},
 			})
 		} else if i := slices.IndexFunc(emojies, func(e *discordgo.Emoji) bool {
 			return v != "" && e.ID == v
@@ -97,7 +99,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 				EmojiId:    v,
 				EmojiName:  emojies[i].Name,
 				IsCustom:   true,
-				Actions:    []rule.ReactAction{rule.Delete},
+				Actions:    [rac]rule.ReactAction{rule.Delete},
 			})
 		} else if strings.HasPrefix(v, ":") && strings.HasSuffix(v, ":") {
 			eId := ""
@@ -117,7 +119,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 				EmojiName:  eParsed,
 				EmojiId:    eId,
 				IsCustom:   true,
-				Actions:    []rule.ReactAction{rule.Delete},
+				Actions:    [rac]rule.ReactAction{rule.Delete},
 			})
 		} else {
 			var emojiSequence string
@@ -136,7 +138,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 							RuleAuthor: ruleAuthor,
 							EmojiName:  emojiSequence,
 							IsCustom:   false,
-							Actions:    []rule.ReactAction{rule.Delete},
+							Actions:    [rac]rule.ReactAction{rule.Delete},
 						})
 						emojiSequence = ""
 					}
@@ -151,7 +153,7 @@ func parseModalReactionInput(text string, ruleAuthor string, guildId string, emo
 					RuleAuthor: ruleAuthor,
 					EmojiName:  v,
 					IsCustom:   false,
-					Actions:    []rule.ReactAction{rule.Delete},
+					Actions:    [rac]rule.ReactAction{rule.Delete},
 				})
 			}
 		}
