@@ -28,7 +28,7 @@ func HandleSubmitDeleteReactionModal(rm *rules.RuleManager, messageInteractions 
 			return
 		}
 
-		deleteRulesDto := make([]rules.RulesDeleteDto, len(data.Values))
+		deleteRulesDto := make([]rules.RulesDeleteDto, 0, len(data.Values))
 		for _, v := range data.Values {
 			vSplit := strings.Split(v, ":")
 			emojiName := vSplit[0]
@@ -75,6 +75,9 @@ func HandleSubmitDeleteReactionModal(rm *rules.RuleManager, messageInteractions 
 
 		if err != nil {
 			logger.Error(err, map[string]any{"details": "failed to delete message"})
+			commandUtils.SendDefaultResponse(s, i, "Failed to delete message")
 		}
+
+		commandUtils.SendDefaultResponse(s, i, "Successfully deleted reaction rules")
 	}
 }

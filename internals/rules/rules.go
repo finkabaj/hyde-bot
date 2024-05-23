@@ -55,18 +55,35 @@ func (rm *RuleManager) AddRules(guildId string, rules Rules) {
 	rm.rm[guildId] = rules
 }
 
-func (rm *RuleManager) DeleteReactionRules(guildID string, reactionRules []rule.ReactionRule) {
+func (rm *RuleManager) DeleteReactionRules(guildID string, deleteDto []RulesDeleteDto) {
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
 
 	rules := rm.rm[guildID]
-	for _, rule := range reactionRules {
-		for i, r := range rules.ReactionRules {
-			if r.EmojiName == rule.EmojiName && r.EmojiId == rule.EmojiId {
-				rules.ReactionRules = append(rules.ReactionRules[:i], rules.ReactionRules[i+1:]...)
+	var updatedRules []rule.ReactionRule
+
+	for _, r := range rules.ReactionRules {
+		shouldDelete := false
+		for _, deleteRule := range deleteDto {
+			if r.EmojiName == deleteRule.EmojiName && r.EmojiId == deleteRule.EmojiId {
+				shouldDelete = true
+				break
 			}
 		}
+		if !shouldDelete {
+			updatedRules = append(updatedRules, r)
+		}
 	}
+
+	if len(updatedRules) == 0 {
+		rules.HaveReactionRules = false
+		rules.ReactionRules = nil
+	} else {
+		rules.ReactionRules = updatedRules
+	}
+
+	rm.rm[guildID] = rules
+
 }
 
 func (rm *RuleManager) AddReactionRules(guildId string, reactionRules []rule.ReactionRule) {
@@ -214,7 +231,7 @@ func (rm *RuleManager) DeleteReactionRulesApi(guildId string, deleteDto []RulesD
 		return fmt.Errorf("error deleting reaction rules: %w", err)
 	}
 
-	query := make([]rule.DeleteReactionRuleQuery, len(deleteDto))
+	query := make([]rule.DeleteReactionRuleQuery, 0, len(deleteDto))
 
 	for _, dto := range deleteDto {
 		for _, rRule := range rRules {
@@ -260,14 +277,18 @@ func (rm *RuleManager) DeleteReactionRulesApi(guildId string, deleteDto []RulesD
 		var errRes common.ErrorResponse
 
 		if err = common.UnmarshalBodyBytes(b, &errRes); err != nil {
-			logger.Error(errors.New("error posting unmarshaling reaction rules error"))
-			return fmt.Errorf("error deleting reaction rules: %w", err)
+			logger.Error(errors.New("error unmarshaling errRes"))
+			return fmt.Errorf("error unmarshaling errRes: %w", err)
 		}
 
 		logger.Debug("Error response", map[string]any{"status": res.StatusCode, "error": errRes.Error, "validationErrors": errRes.ValidationErrors, "message": errRes.Message})
 
 		return errors.New(errRes.Error)
 	}
+
+	rm.DeleteReactionRules(guildId, deleteDto)
+
+	logger.Info("Reaction rules deleted", map[string]any{"guildId": guildId, "rules": deleteDto})
 
 	return nil
 }

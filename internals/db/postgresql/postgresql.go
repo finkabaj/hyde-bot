@@ -140,7 +140,7 @@ func (p *Postgresql) CreateGuild(gc guild.GuildCreate) (guild.Guild, error) {
     RETURNING *
   `
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	row, err := p.pool.Query(ctx, query, gc.GuildId, gc.OwnerId)
 	if err != nil {
@@ -164,7 +164,7 @@ func (p *Postgresql) ReadGuild(guildId string) (guild.Guild, error) {
     SELECT * FROM guilds WHERE "guildId" = $1
   `
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	row, err := p.pool.Query(ctx, query, guildId)
 
@@ -187,7 +187,7 @@ func (p *Postgresql) ReadGuild(guildId string) (guild.Guild, error) {
 }
 
 func (p *Postgresql) CreateReactionRules(rules []rule.ReactionRule) ([]rule.ReactionRule, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 
 	tx, err := p.pool.Begin(ctx)
@@ -246,7 +246,7 @@ func (p *Postgresql) DeleteReactionRules(rules []rule.DeleteReactionRuleQuery, g
     DELETE FROM "reactionRules" WHERE "guildId" = $1 AND "emojiId" in (%s) AND "emojiName" in (%s) 
   `, strings.Join(placeholder1, ","), strings.Join(placeholder2, ","))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	_, err := p.pool.Query(ctx, query, values...)
 
@@ -262,7 +262,7 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
     SELECT * FROM "reactionRules" WHERE "guildId" = $1
   `
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	rows, err := p.pool.Query(ctx, query, gId)
 

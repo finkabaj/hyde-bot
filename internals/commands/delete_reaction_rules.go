@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -59,6 +60,11 @@ func DeleteReactionRulesCommandHandler(s *discordgo.Session,
 		return
 	}
 
+	if len(opts) == 0 {
+		commandUtils.SendDefaultResponse(s, i, "No reaction rules found")
+		return
+	}
+
 	minValue := 1
 
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -114,6 +120,10 @@ func createSelectMenuOptions(rm *rules.RuleManager, guildId string) ([]discordgo
 	options := make([]discordgo.SelectMenuOption, 0)
 
 	rRules, err := rm.GetReactionRules(guildId, false)
+
+	if errors.Is(err, rules.ErrRulesNotFound) || len(rRules) == 0 {
+		return []discordgo.SelectMenuOption{}, nil
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get reaction rules in createSelectMenuOptions: %w", err)
