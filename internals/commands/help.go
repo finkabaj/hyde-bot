@@ -17,10 +17,10 @@ var HelpCommand = &discordgo.ApplicationCommand{
 	DefaultMemberPermissions: &memberHelpPermission,
 }
 
-// TODO: add a way to show only the commands that the user has permission to use
 func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, cmdManager *CommandManager) {
 	commands := "Available commands:\n"
 
+	p := i.Member.Permissions
 	cmds := cmdManager.GetGuildCommands(i.GuildID, true)
 
 	if len(cmds) == 0 {
@@ -28,7 +28,7 @@ func HelpCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, cm
 	}
 
 	for _, command := range cmds {
-		if command.IsRegistered {
+		if command.IsRegistered && (command.ApplicationCommand.DefaultMemberPermissions == nil || p&*command.ApplicationCommand.DefaultMemberPermissions == *command.ApplicationCommand.DefaultMemberPermissions) {
 			commands += "/" + command.ApplicationCommand.Name + "\n"
 		}
 	}

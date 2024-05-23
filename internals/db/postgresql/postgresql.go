@@ -284,8 +284,6 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
 		foundRules = append(foundRules, foundRule)
 	}
 
-	//foundRules, err := pgx.CollectRows(rows, pgx.RowToStructByName[rule.ReactionRule])
-
 	if rows.Err() == pgx.ErrNoRows {
 		return []rule.ReactionRule{}, common.ErrNotFound
 	} else if rows.Err() != nil {
