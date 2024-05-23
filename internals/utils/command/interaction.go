@@ -27,6 +27,7 @@ func SendDefaultResponse(s *discordgo.Session, i *discordgo.InteractionCreate, m
 	}
 }
 
+// TODO: add more i.Type cases
 func FillFields(i *discordgo.InteractionCreate) map[string]any {
 	switch i.Type {
 	case discordgo.InteractionApplicationCommand:
@@ -56,6 +57,9 @@ func FillFields(i *discordgo.InteractionCreate) map[string]any {
 					case *discordgo.TextInput:
 						textInput := action.(*discordgo.TextInput)
 						modalFields["TextInput"] = textInput.Value
+					case *discordgo.SelectMenu:
+						selectMenu := action.(*discordgo.SelectMenu)
+						modalFields["SelectMenu"] = selectMenu.Options
 					}
 				}
 			}
@@ -65,7 +69,15 @@ func FillFields(i *discordgo.InteractionCreate) map[string]any {
 			"InteractionType": i.Type,
 			"InteractionData": modalFields,
 		}
-	default:
-		return map[string]any{"InteractionType": "Unknown interaction type"}
+	case discordgo.InteractionMessageComponent:
+		data := i.MessageComponentData()
+
+		if data.ComponentType == discordgo.SelectMenuComponent {
+			return map[string]any{
+				"InteractionType": i.Type,
+				"InteractionData": data.Values,
+			}
+		}
 	}
+	return map[string]any{"InteractionType": "Unknown interaction type"}
 }

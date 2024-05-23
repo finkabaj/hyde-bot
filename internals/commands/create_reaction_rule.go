@@ -10,8 +10,8 @@ var dmCreateReactionRulePermission = false
 var createReactionRulePermission int64 = discordgo.PermissionAdministrator
 
 var CreateReactionRuleCommand = &discordgo.ApplicationCommand{
-	Name:                     "васеризация",
-	Description:              "Запрет вассеру пердеть реакциями",
+	Name:                     "create-reaction-rules",
+	Description:              "Create reaction rules for the server",
 	Type:                     discordgo.ChatApplicationCommand,
 	DMPermission:             &dmCreateReactionRulePermission,
 	DefaultMemberPermissions: &createReactionRulePermission,
@@ -22,7 +22,7 @@ func CreateReactionRuleHandler(s *discordgo.Session, i *discordgo.InteractionCre
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
 			CustomID: "emoji_ban" + i.Member.User.ID,
-			Title:    "пизда вассеридзе",
+			Title:    "Create reaction rules",
 			Components: []discordgo.MessageComponent{
 				discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{

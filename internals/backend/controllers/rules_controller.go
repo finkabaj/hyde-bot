@@ -100,12 +100,6 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 			SetMessage("rule on this reaction already exists").
 			Send(w)
 		return
-	case rule.ErrRuleReactionIncompatible:
-		common.NewErrorResponseBuilder(err).
-			SetStatus(http.StatusConflict).
-			SetMessage("either emoji name or emoji id must be provided").
-			Send(w)
-		return
 	case common.ErrBadRequest:
 		common.NewErrorResponseBuilder(err).
 			SetStatus(http.StatusBadRequest).
@@ -144,12 +138,6 @@ func (rc *RulesController) deleteReactions(w http.ResponseWriter, r *http.Reques
 		return
 	case common.ErrInternal:
 		common.SendInternalError(w)
-		return
-	case rule.ErrRuleReactionIncompatible:
-		common.NewErrorResponseBuilder(err).
-			SetMessage("either emoji name or emoji id must be provided").
-			SetStatus(http.StatusConflict).
-			Send(w)
 		return
 	case common.ErrBadRequest:
 		common.SendBadRequestError(w, "invalid request query")

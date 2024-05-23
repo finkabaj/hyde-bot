@@ -68,13 +68,7 @@ func (rs *ReactionService) CreateReactionRules(rules []rule.ReactionRule) ([]rul
 			return []rule.ReactionRule{}, common.ErrBadRequest
 		}
 
-		if v.EmojiName != "" && v.EmojiId != "" {
-			return []rule.ReactionRule{}, rule.ErrRuleReactionIncompatible
-		}
-
-		actionsLen := len(v.Actions)
-
-		if actionsLen == 0 || len(common.RemoveDuplicates(v.Actions)) != actionsLen {
+		if common.HaveDuplicatesActions(v.Actions) {
 			return []rule.ReactionRule{}, common.ErrBadRequest
 		}
 	}
@@ -118,10 +112,6 @@ func (rs *ReactionService) DeleteReactionRules(query []rule.DeleteReactionRuleQu
 	for _, r := range query {
 		if r.EmojiId == "" && r.EmojiName == "" {
 			return common.ErrBadRequest
-		}
-
-		if r.EmojiId != "" && r.EmojiName != "" {
-			return rule.ErrRuleReactionIncompatible
 		}
 	}
 

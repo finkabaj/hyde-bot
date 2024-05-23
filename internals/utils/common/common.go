@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/finkabaj/hyde-bot/internals/utils/rule"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -141,14 +142,26 @@ func RemoveDuplicates[T comparable](slice []T) []T {
 	return result
 }
 
-func HaveIntersection[T any](a, b []T) bool {
+func HaveDuplicatesActions(a [rule.ReactActionCount]rule.ReactAction) bool {
+	seen := make(map[rule.ReactAction]bool)
+
 	for _, val := range a {
-		if slices.ContainsFunc(b, func(v T) bool {
-			return reflect.DeepEqual(val, v)
-		}) {
+		if val != 0 && seen[val] {
+			return true
+		}
+		seen[val] = true
+	}
+
+	return false
+}
+
+func HaveIntersection[T comparable](a, b []T) bool {
+	for _, val := range a {
+		if slices.Contains(b, val) {
 			return true
 		}
 	}
 
 	return false
+
 }

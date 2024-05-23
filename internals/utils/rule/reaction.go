@@ -10,29 +10,66 @@ import (
 type ReactAction int
 
 const (
-	Delete ReactAction = iota
+	Delete ReactAction = iota + 1
 	Warn
 	Ban
 	Kick
 )
 
+const ReactActionCount = 4
+
 type ReactionRule struct {
-	EmojiName  string        `json:"emojiName,omitempty" validate:"omitempty"`
-	EmojiId    string        `json:"emojiId,omitempty" validate:"omitempty"`
-	GuildId    string        `json:"guildId" validate:"required"`
-	RuleAuthor string        `json:"ruleAuthor" validate:"required"`
-	Actions    []ReactAction `json:"actions" validate:"dive"`
+	EmojiName  string                        `json:"emojiName,omitempty" validate:"required"`
+	EmojiId    string                        `json:"emojiId,omitempty" validate:"omitempty"`
+	IsCustom   bool                          `json:"isCustom" validate:"boolean"`
+	GuildId    string                        `json:"guildId" validate:"required"`
+	RuleAuthor string                        `json:"ruleAuthor" validate:"required"`
+	Actions    [ReactActionCount]ReactAction `json:"actions" validate:"dive"`
 }
 
 type DeleteReactionRuleQuery struct {
 	EmojiId   string `json:"emojiId,omitempty"`
-	EmojiName string `json:"emojiName,omitempty"`
+	EmojiName string `json:"emojiName"`
 }
 
 var (
 	ErrRuleReactionConflict     = errors.New("rule reaction conflict")
 	ErrRuleReactionIncompatible = errors.New("rule reaction incompatible")
 )
+
+func (a ReactionRule) Compare(b ReactionRule) int {
+	if a.EmojiName != b.EmojiName {
+		return -1
+	}
+
+	if a.EmojiId != b.EmojiId {
+		return -1
+	}
+
+	if a.IsCustom != b.IsCustom {
+		return -1
+	}
+
+	if a.GuildId != b.GuildId {
+		return -1
+	}
+
+	if a.RuleAuthor != b.RuleAuthor {
+		return -1
+	}
+
+	if len(a.Actions) != len(b.Actions) {
+		return -1
+	}
+
+	for i, action := range a.Actions {
+		if action != b.Actions[i] {
+			return -1
+		}
+	}
+
+	return 0
+}
 
 func (a *ReactAction) UnmarshalJSON(data []byte) error {
 	var intValue int

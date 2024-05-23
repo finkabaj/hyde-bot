@@ -93,6 +93,7 @@ func (p *Postgresql) setup() (err error) {
     CREATE TABLE IF NOT EXISTS "reactionRules" (
       "emojiId" VARCHAR(255),
       "emojiName" VARCHAR(255),
+      "isCustom" BOOLEAN NOT NULL DEFAULT FALSE,
       "guildId" VARCHAR(255) NOT NULL,
       "ruleAuthor" VARCHAR(255) NOT NULL,
       "actions" INTEGER[] NOT NULL,
@@ -139,7 +140,7 @@ func (p *Postgresql) CreateGuild(gc guild.GuildCreate) (guild.Guild, error) {
     RETURNING *
   `
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	row, err := p.pool.Query(ctx, query, gc.GuildId, gc.OwnerId)
 	if err != nil {
@@ -163,7 +164,7 @@ func (p *Postgresql) ReadGuild(guildId string) (guild.Guild, error) {
     SELECT * FROM guilds WHERE "guildId" = $1
   `
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	row, err := p.pool.Query(ctx, query, guildId)
 
@@ -186,7 +187,7 @@ func (p *Postgresql) ReadGuild(guildId string) (guild.Guild, error) {
 }
 
 func (p *Postgresql) CreateReactionRules(rules []rule.ReactionRule) ([]rule.ReactionRule, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 
 	tx, err := p.pool.Begin(ctx)
@@ -208,7 +209,7 @@ func (p *Postgresql) CreateReactionRules(rules []rule.ReactionRule) ([]rule.Reac
 
 	copyCount, err := p.pool.CopyFrom(ctx,
 		pgx.Identifier{"reactionRules"},
-		[]string{"emojiName", "emojiId", "guildId", "ruleAuthor", "actions"},
+		[]string{"emojiName", "emojiId", "isCustom", "guildId", "ruleAuthor", "actions"},
 		pgx.CopyFromRows(rows),
 	)
 
@@ -245,7 +246,7 @@ func (p *Postgresql) DeleteReactionRules(rules []rule.DeleteReactionRuleQuery, g
     DELETE FROM "reactionRules" WHERE "guildId" = $1 AND "emojiId" in (%s) AND "emojiName" in (%s) 
   `, strings.Join(placeholder1, ","), strings.Join(placeholder2, ","))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	_, err := p.pool.Query(ctx, query, values...)
 
@@ -261,7 +262,7 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
     SELECT * FROM "reactionRules" WHERE "guildId" = $1
   `
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	rows, err := p.pool.Query(ctx, query, gId)
 
@@ -270,12 +271,25 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 
-	foundRules, err := pgx.CollectRows(rows, pgx.RowToStructByName[rule.ReactionRule])
+	var foundRules []rule.ReactionRule
+	for rows.Next() {
+		var foundRule rule.ReactionRule
+		var actions []rule.ReactAction
+		err = rows.Scan(&foundRule.EmojiId, &foundRule.EmojiName, &foundRule.IsCustom, &foundRule.GuildId, &foundRule.RuleAuthor, &actions)
+		if err != nil {
+			p.logger.Error(err, map[string]any{"details": "error while scanning rows in GetReactionRules"})
+			return []rule.ReactionRule{}, common.ErrInternal
+		}
+		copy(foundRule.Actions[:], actions)
+		foundRules = append(foundRules, foundRule)
+	}
 
-	if err == pgx.ErrNoRows {
+	//foundRules, err := pgx.CollectRows(rows, pgx.RowToStructByName[rule.ReactionRule])
+
+	if rows.Err() == pgx.ErrNoRows {
 		return []rule.ReactionRule{}, common.ErrNotFound
-	} else if err != nil {
-		p.logger.Error(err, map[string]any{"details": "error while collecting rows in GetReactionRules"})
+	} else if rows.Err() != nil {
+		p.logger.Error(rows.Err(), map[string]any{"details": "error while collecting rows in GetReactionRules"})
 		return []rule.ReactionRule{}, common.ErrInternal
 	}
 

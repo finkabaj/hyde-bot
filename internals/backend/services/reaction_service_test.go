@@ -14,6 +14,8 @@ var mockDb = mogs.NewDbMock()
 var mockGuildService = mogs.NewMockGuildService()
 var mockReactionService = NewReactionService(mogs.NewMockLogger(), mockDb, mockGuildService)
 
+const rac = rule.ReactActionCount
+
 func TestGetReactionRules(t *testing.T) {
 	t.Run("Positive", testGetReactionRulesPositive)
 	t.Run("NotFound", testGetReactionRulesNotFound)
@@ -28,7 +30,6 @@ func TestCreateReactionRules(t *testing.T) {
 	t.Run("EmojiIdConflict", testCreateReactionRulesEmojiIdConflict)
 	t.Run("EmojiNameConflict", testCreateReactionRulesEmojiNameConflict)
 	t.Run("EmptyEmojiIdAndName", testCreateReactionRulesEmptyEmojiIdAndName)
-	t.Run("EmojiIdAndName", testCreateReactionRulesEmojiIdAndName)
 	t.Run("EmptyActions", testCreateReactionRulesEmptyActions)
 	t.Run("DuplicateActions", testCreateReactionRulesDuplicateActions)
 	t.Run("DbReturnError", testCreateReactionRulesDbReturnError)
@@ -39,7 +40,6 @@ func TestDeleteReactionRules(t *testing.T) {
 	t.Run("MinLen", testDeleteReactionRulesMinLen)
 	t.Run("NotFound", testDeleteReactionRulesNotFound)
 	t.Run("HaveNoEmojiIdAndName", testDeleteReactionRulesHaveNoEmojiIdAndName)
-	t.Run("Incompatible", testDeleteReactionRulesIncompatible)
 	t.Run("DbReturnError", testDeleteReactionRulesDbReturnError)
 }
 
@@ -54,13 +54,13 @@ func testGetReactionRulesPositive(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "asdsa",
 			EmojiId:    "1231",
-			Actions:    []rule.ReactAction{1, 2},
+			Actions:    [rac]rule.ReactAction{1, 2},
 		},
 		{
 			GuildId:    gId,
 			RuleAuthor: "fsd",
 			EmojiName:  "das",
-			Actions:    []rule.ReactAction{1},
+			Actions:    [rac]rule.ReactAction{1},
 		},
 	}
 
@@ -116,13 +116,13 @@ func testCreateReactionRulesPositive(t *testing.T) {
 			EmojiName:  "🚌",
 			RuleAuthor: "me",
 			GuildId:    gId,
-			Actions:    []rule.ReactAction{0, 1},
+			Actions:    [rac]rule.ReactAction{0, 1},
 		},
 		{
 			EmojiId:    "1337",
 			RuleAuthor: "not me",
 			GuildId:    gId,
-			Actions:    []rule.ReactAction{2},
+			Actions:    [rac]rule.ReactAction{2},
 		},
 	}
 
@@ -159,7 +159,7 @@ func testCreateReactionRulesGuildNotFound(t *testing.T) {
 		GuildId:    gId,
 		RuleAuthor: "me)",
 		EmojiId:    "131",
-		Actions:    []rule.ReactAction{0},
+		Actions:    [rac]rule.ReactAction{0},
 	}})
 
 	assert.Equal(t, []rule.ReactionRule{}, actualResponse)
@@ -177,19 +177,19 @@ func testCreateReactionRulesNotEqualGID(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiId:    "fsfsgf",
-			Actions:    []rule.ReactAction{0},
+			Actions:    [rac]rule.ReactAction{0},
 		},
 		{
 			GuildId:    gId,
 			RuleAuthor: "sdfds",
 			EmojiName:  "1",
-			Actions:    []rule.ReactAction{0, 1},
+			Actions:    [rac]rule.ReactAction{0, 1},
 		},
 		{
 			GuildId:    "fdsf",
 			RuleAuthor: "fs",
 			EmojiId:    "ffsd",
-			Actions:    []rule.ReactAction{0, 2},
+			Actions:    [rac]rule.ReactAction{0, 2},
 		},
 	}
 
@@ -213,13 +213,13 @@ func testCreateReactionRulesEmojiIdConflict(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiId:    "fsfsgf",
-			Actions:    []rule.ReactAction{0},
+			Actions:    [rac]rule.ReactAction{0},
 		},
 		{
 			GuildId:    gId,
 			RuleAuthor: "sdfds",
 			EmojiId:    "vsd",
-			Actions:    []rule.ReactAction{0, 1},
+			Actions:    [rac]rule.ReactAction{0, 1},
 		},
 	}
 	foundRules := []rule.ReactionRule{
@@ -227,13 +227,13 @@ func testCreateReactionRulesEmojiIdConflict(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiId:    "sdvsvs",
-			Actions:    []rule.ReactAction{0},
+			Actions:    [rac]rule.ReactAction{0},
 		},
 		{
 			GuildId:    gId,
 			RuleAuthor: "sdfds",
 			EmojiId:    "vsd",
-			Actions:    []rule.ReactAction{0, 1},
+			Actions:    [rac]rule.ReactAction{0, 1},
 		},
 	}
 
@@ -257,13 +257,13 @@ func testCreateReactionRulesEmojiNameConflict(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiName:  "🚌",
-			Actions:    []rule.ReactAction{0},
+			Actions:    [rac]rule.ReactAction{0},
 		},
 		{
 			GuildId:    gId,
 			RuleAuthor: "sdfds",
 			EmojiName:  "131",
-			Actions:    []rule.ReactAction{0, 1},
+			Actions:    [rac]rule.ReactAction{0, 1},
 		},
 	}
 	foundRules := []rule.ReactionRule{
@@ -271,13 +271,13 @@ func testCreateReactionRulesEmojiNameConflict(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiName:  "🚌",
-			Actions:    []rule.ReactAction{0},
+			Actions:    [rac]rule.ReactAction{0},
 		},
 		{
 			GuildId:    gId,
 			RuleAuthor: "sdfds",
 			EmojiName:  "1",
-			Actions:    []rule.ReactAction{0, 1},
+			Actions:    [rac]rule.ReactAction{0, 1},
 		},
 	}
 
@@ -300,7 +300,7 @@ func testCreateReactionRulesEmptyEmojiIdAndName(t *testing.T) {
 		{
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
-			Actions:    []rule.ReactAction{0},
+			Actions:    [rac]rule.ReactAction{0},
 		},
 	}
 
@@ -317,31 +317,6 @@ func testCreateReactionRulesEmptyEmojiIdAndName(t *testing.T) {
 	mockDb.AssertNotCalled(t, "CreateReactionRules")
 }
 
-func testCreateReactionRulesEmojiIdAndName(t *testing.T) {
-	gId := "beepboop"
-	rules := []rule.ReactionRule{
-		{
-			GuildId:    gId,
-			RuleAuthor: "fsdf",
-			EmojiId:    "123",
-			EmojiName:  "🚌",
-			Actions:    []rule.ReactAction{0},
-		},
-	}
-
-	mockGuildService.On("GetGuild", gId).Return(guild.Guild{}, nil)
-	mockDb.On("ReadReactionRules", gId).Return([]rule.ReactionRule{}, nil)
-
-	actualResponse, err := mockReactionService.CreateReactionRules(rules)
-
-	assert.Equal(t, []rule.ReactionRule{}, actualResponse)
-	assert.Equal(t, rule.ErrRuleReactionIncompatible, err)
-
-	mockGuildService.AssertExpectations(t)
-	mockDb.AssertExpectations(t)
-	mockDb.AssertNotCalled(t, "CreateReactionRules")
-}
-
 func testCreateReactionRulesEmptyActions(t *testing.T) {
 	gId := "beepboop"
 	rules := []rule.ReactionRule{
@@ -349,7 +324,7 @@ func testCreateReactionRulesEmptyActions(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiId:    "123",
-			Actions:    []rule.ReactAction{},
+			Actions:    [rac]rule.ReactAction{},
 		},
 	}
 
@@ -373,7 +348,7 @@ func testCreateReactionRulesDuplicateActions(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiId:    "123",
-			Actions:    []rule.ReactAction{0, 0},
+			Actions:    [rac]rule.ReactAction{0, 0},
 		},
 	}
 
@@ -397,7 +372,7 @@ func testCreateReactionRulesDbReturnError(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiId:    "123",
-			Actions:    []rule.ReactAction{0},
+			Actions:    [rac]rule.ReactAction{0},
 		},
 	}
 
@@ -480,25 +455,6 @@ func testDeleteReactionRulesHaveNoEmojiIdAndName(t *testing.T) {
 	err := mockReactionService.DeleteReactionRules(rules, gId)
 
 	assert.Equal(t, common.ErrBadRequest, err)
-
-	mockGuildService.AssertExpectations(t)
-	mockDb.AssertNotCalled(t, "DeleteReactionRules")
-}
-
-func testDeleteReactionRulesIncompatible(t *testing.T) {
-	gId := "del"
-	rules := []rule.DeleteReactionRuleQuery{
-		{
-			EmojiId:   "1",
-			EmojiName: "a",
-		},
-	}
-
-	mockGuildService.On("GetGuild", gId).Return(guild.Guild{}, nil)
-
-	err := mockReactionService.DeleteReactionRules(rules, gId)
-
-	assert.Equal(t, rule.ErrRuleReactionIncompatible, err)
 
 	mockGuildService.AssertExpectations(t)
 	mockDb.AssertNotCalled(t, "DeleteReactionRules")
