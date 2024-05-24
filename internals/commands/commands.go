@@ -58,6 +58,10 @@ func (cm *CommandManager) RegisterDefaultCommandsToManager() {
 		DeleteReactionRulesCommandHandler(s, i, cm.rm, cm.messageInteractions)
 	}, guildID)
 
+	cm.RegisterCommandToManager(ActivateRankSystemCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		ActivateRankSystemHandler(s, i)
+	}, guildID)
+
 	if os.Getenv("ENV") == "development" {
 		cm.RegisterCommandToManager(DeleteCommand, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			DeleteCommandHandler(s, i, cm)

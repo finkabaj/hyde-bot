@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/finkabaj/hyde-bot/internals/commands"
+	"github.com/finkabaj/hyde-bot/internals/ranks"
 	"github.com/finkabaj/hyde-bot/internals/rules"
 	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 )
@@ -20,7 +21,8 @@ type Event struct {
 }
 
 type EventManager struct {
-	rm                  *rules.RuleManager
+	ruleManager         *rules.RuleManager
+	rankManager         *ranks.RankManager
 	cm                  *commands.CommandManager
 	messageInteractions *commandUtils.MessageInteractions
 	Events              map[string]map[string]*Event // Events[type][guildID] = event
@@ -29,11 +31,12 @@ type EventManager struct {
 
 var em *EventManager
 
-func NewEventManager(rm *rules.RuleManager, cm *commands.CommandManager,
-	client *http.Client, messageInteractions *commandUtils.MessageInteractions) *EventManager {
+func NewEventManager(ruleManager *rules.RuleManager, cm *commands.CommandManager,
+	client *http.Client, messageInteractions *commandUtils.MessageInteractions, rankManager *ranks.RankManager) *EventManager {
 	if em == nil {
 		return &EventManager{
-			rm:                  rm,
+			ruleManager:         ruleManager,
+			rankManager:         rankManager,
 			cm:                  cm,
 			messageInteractions: messageInteractions,
 			Events:              make(map[string]map[string]*Event),
@@ -50,11 +53,12 @@ func (em *EventManager) RegisterDefaultEvents() {
 		guildID = os.Getenv("DEV_GUILD_ID")
 	}
 
-	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction(em.rm), guildID)
+	em.RegisterEventHandler("MessageReactionAdd", HandleDeleteReaction(em.ruleManager), guildID)
 	em.RegisterEventHandler("InteractionCreate", HandleInteractionCreate(em.cm), guildID)
-	em.RegisterEventHandler("GuildCreate", HandleGuildCreate(em.rm, em.client), "")
-	em.RegisterEventHandler("ModalSubmitReaction", HandleSumbitModalReaction(em.rm), guildID)
-	em.RegisterEventHandler("MessageSubmitDeleteReactions", HandleSubmitDeleteReactionModal(em.rm, em.messageInteractions), guildID)
+	em.RegisterEventHandler("GuildCreate", HandleGuildCreate(em.ruleManager, em.client), "")
+	em.RegisterEventHandler("ModalSubmitReaction", HandleSubmitModalReaction(em.ruleManager), guildID)
+	em.RegisterEventHandler("MessageSubmitDeleteReactions", HandleSubmitDeleteReactionModal(em.ruleManager, em.messageInteractions), guildID)
+	em.RegisterEventHandler("ModalSubmitActivateRankSystem", HandleSubmitActivateRankSystem(em.rankManager, em.ruleManager), guildID)
 }
 
 // RegisterEventHandler registers an event handler for a specific guild.
@@ -108,7 +112,14 @@ func getEventType(event interface{}) string {
 	if i, ok := event.(*discordgo.InteractionCreate); ok {
 		switch i.Type {
 		case discordgo.InteractionModalSubmit:
-			return "ModalSubmitReaction"
+			data := i.ModalSubmitData()
+
+			switch data.CustomID {
+			case "emoji_ban" + i.Member.User.ID:
+				return "ModalSubmitReaction"
+			case "activate_role_system" + i.Member.User.ID:
+				return "ModalSubmitActivateRankSystem"
+			}
 		case discordgo.InteractionMessageComponent:
 			return "MessageSubmitDeleteReactions"
 		}

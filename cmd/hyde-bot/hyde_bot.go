@@ -12,6 +12,7 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/commands"
 	"github.com/finkabaj/hyde-bot/internals/events"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/ranks"
 	"github.com/finkabaj/hyde-bot/internals/rules"
 	commandUtils "github.com/finkabaj/hyde-bot/internals/utils/command"
 	"github.com/joho/godotenv"
@@ -41,12 +42,13 @@ func main() {
 	}
 
 	messageInteractions := commandUtils.NewMessageInteractions()
-	rm := rules.NewRuleManager(client)
+	rankManager := ranks.NewRankManager()
+	ruleManager := rules.NewRuleManager(client)
 
-	cmdManager := commands.NewCommandManager(rm, messageInteractions)
+	cmdManager := commands.NewCommandManager(ruleManager, messageInteractions)
 	cmdManager.RegisterDefaultCommandsToManager()
 
-	evtManager := events.NewEventManager(rm, cmdManager, client, messageInteractions)
+	evtManager := events.NewEventManager(ruleManager, cmdManager, client, messageInteractions, rankManager)
 	evtManager.RegisterDefaultEvents()
 
 	s.AddHandler(func(s *discordgo.Session, event interface{}) {

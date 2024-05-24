@@ -15,7 +15,7 @@ import (
 	"github.com/finkabaj/hyde-bot/internals/utils/rule"
 )
 
-func HandleSumbitModalReaction(rm *rules.RuleManager) EventHandler {
+func HandleSubmitModalReaction(rm *rules.RuleManager) EventHandler {
 	return func(s *discordgo.Session, event any) {
 		data, i, err := commandUtils.GetDataFromModalSubmit(event)
 
