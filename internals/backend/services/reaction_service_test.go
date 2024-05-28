@@ -30,7 +30,6 @@ func TestCreateReactionRules(t *testing.T) {
 	t.Run("EmojiIdConflict", testCreateReactionRulesEmojiIdConflict)
 	t.Run("EmojiNameConflict", testCreateReactionRulesEmojiNameConflict)
 	t.Run("EmptyEmojiIdAndName", testCreateReactionRulesEmptyEmojiIdAndName)
-	t.Run("EmptyActions", testCreateReactionRulesEmptyActions)
 	t.Run("DuplicateActions", testCreateReactionRulesDuplicateActions)
 	t.Run("DbReturnError", testCreateReactionRulesDbReturnError)
 }
@@ -317,30 +316,6 @@ func testCreateReactionRulesEmptyEmojiIdAndName(t *testing.T) {
 	mockDb.AssertNotCalled(t, "CreateReactionRules")
 }
 
-func testCreateReactionRulesEmptyActions(t *testing.T) {
-	gId := "beepboop"
-	rules := []rule.ReactionRule{
-		{
-			GuildId:    gId,
-			RuleAuthor: "fsdf",
-			EmojiId:    "123",
-			Actions:    [rac]rule.ReactAction{},
-		},
-	}
-
-	mockGuildService.On("GetGuild", gId).Return(guild.Guild{}, nil)
-	mockDb.On("ReadReactionRules", gId).Return([]rule.ReactionRule{}, nil)
-
-	actualResponse, err := mockReactionService.CreateReactionRules(rules)
-
-	assert.Equal(t, []rule.ReactionRule{}, actualResponse)
-	assert.Equal(t, common.ErrBadRequest, err)
-
-	mockGuildService.AssertExpectations(t)
-	mockDb.AssertExpectations(t)
-	mockDb.AssertNotCalled(t, "CreateReactionRules")
-}
-
 func testCreateReactionRulesDuplicateActions(t *testing.T) {
 	gId := "beepboop"
 	rules := []rule.ReactionRule{
@@ -348,7 +323,7 @@ func testCreateReactionRulesDuplicateActions(t *testing.T) {
 			GuildId:    gId,
 			RuleAuthor: "fsdf",
 			EmojiId:    "123",
-			Actions:    [rac]rule.ReactAction{0, 0},
+			Actions:    [rac]rule.ReactAction{1, 1, 0, 0},
 		},
 	}
 

@@ -104,9 +104,11 @@ func parseActivateRoleSystemInput(ids, xps string, roles []*discordgo.Role) ([]r
 				} else {
 					xp += xpStep
 				}
+				// TODO: make uuid
 				rs = append(rs, ranks.Rank{
 					Level: uint8(i + 1),
 					XP:    xp,
+					ID:    "TODO: make uuid",
 					Role:  role,
 				})
 			}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/finkabaj/hyde-bot/internals/backend/controllers"
+	mogs "github.com/finkabaj/hyde-bot/internals/backend/mocks"
 	"github.com/finkabaj/hyde-bot/internals/backend/services"
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/db/postgresql"
@@ -70,6 +71,10 @@ func main() {
 	reactionService := services.NewReactionService(logger, database, guildService)
 	rulesController := controllers.NewRulesController(reactionService, logger)
 	rulesController.RegisterRoutes(r)
+
+	rankService := mogs.MockRankService{}
+	rankController := controllers.NewRankController(&rankService, logger)
+	rankController.RegisterRoutes(r)
 
 	host := os.Getenv("API_HOST")
 	port := os.Getenv("API_PORT")

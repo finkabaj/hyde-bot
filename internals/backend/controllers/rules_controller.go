@@ -46,16 +46,10 @@ func (rc *RulesController) getReactions(w http.ResponseWriter, r *http.Request) 
 
 	switch {
 	case err == common.ErrInternal:
-		common.NewErrorResponseBuilder(err).
-			SetMessage("Internal server error").
-			SetStatus(http.StatusInternalServerError).
-			Send(w)
+		common.SendInternalError(w, "Internal server error")
 		return
 	case err == common.ErrNotFound:
-		common.NewErrorResponseBuilder(err).
-			SetMessage("no rules found for the guild").
-			SetStatus(http.StatusNotFound).
-			Send(w)
+		common.SendNotFoundError(w, "no rules found for the guild")
 		return
 	case err != nil:
 		common.NewErrorResponseBuilder(err).
@@ -67,10 +61,7 @@ func (rc *RulesController) getReactions(w http.ResponseWriter, r *http.Request) 
 
 	if err := common.MarshalBody(w, http.StatusOK, &rules); err != nil {
 		rc.logger.Error(err, map[string]any{"details": "Error while marhsaling getReactionsRules response"})
-		common.NewErrorResponseBuilder(common.ErrInternal).
-			SetMessage("Internal server error").
-			SetStatus(http.StatusInternalServerError).
-			Send(w)
+		common.SendInternalError(w)
 	}
 }
 
@@ -79,10 +70,7 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 
 	if !ok {
 		rc.logger.Error(common.ErrInternal, map[string]any{"details": "error while validating postReactions"})
-		common.NewErrorResponseBuilder(common.ErrInternal).
-			SetStatus(http.StatusInternalServerError).
-			SetMessage("Error while validating").
-			Send(w)
+		common.SendInternalError(w, "error while validating")
 		return
 	}
 
@@ -90,9 +78,7 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 
 	switch err {
 	case common.ErrInternal:
-		common.NewErrorResponseBuilder(err).
-			SetStatus(http.StatusInternalServerError).
-			Send(w)
+		common.SendInternalError(w)
 		return
 	case rule.ErrRuleReactionConflict:
 		common.NewErrorResponseBuilder(err).
@@ -101,10 +87,7 @@ func (rc *RulesController) postReactions(w http.ResponseWriter, r *http.Request)
 			Send(w)
 		return
 	case common.ErrBadRequest:
-		common.NewErrorResponseBuilder(err).
-			SetStatus(http.StatusBadRequest).
-			SetMessage("invalid request body").
-			Send(w)
+		common.SendBadRequestError(w, "invalid request body")
 		return
 	case common.ErrNotFound:
 		common.SendNotFoundError(w, "provided guild not found")

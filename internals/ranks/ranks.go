@@ -7,15 +7,16 @@ import (
 )
 
 type Rank struct {
-	Level uint8
-	XP    uint16
-	Role  *discordgo.Role
+	Level uint8           `json:"level" validate:"required,number"`
+	XP    uint16          `json:"xp" validate:"required,number"`
+	ID    string          `json:"id" validate:"required,uuid4"`
+	Role  *discordgo.Role `json:"role"`
 }
 
 type Ranks struct {
-	guildID string
-	ownerID string
-	ranks   []Rank
+	GuildID string `json:"guild_id" validate:"required"`
+	OwnerID string `json:"owner_id" validate:"required"`
+	Ranks   []Rank `json:"ranks" validate:"required,dive"`
 }
 
 type RankManager struct {
@@ -40,8 +41,8 @@ func (rm *RankManager) PostRanks(guildID, ownerID string, ranks []Rank) {
 	defer rm.lock.Unlock()
 
 	rm.ranks[guildID] = Ranks{
-		guildID: guildID,
-		ownerID: ownerID,
-		ranks:   ranks,
+		GuildID: guildID,
+		OwnerID: ownerID,
+		Ranks:   ranks,
 	}
 }

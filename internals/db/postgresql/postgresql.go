@@ -8,6 +8,7 @@ import (
 
 	"github.com/finkabaj/hyde-bot/internals/db"
 	"github.com/finkabaj/hyde-bot/internals/logger"
+	"github.com/finkabaj/hyde-bot/internals/ranks"
 	"github.com/finkabaj/hyde-bot/internals/utils/common"
 	"github.com/finkabaj/hyde-bot/internals/utils/guild"
 	"github.com/finkabaj/hyde-bot/internals/utils/rule"
@@ -293,3 +294,8 @@ func (p *Postgresql) ReadReactionRules(gId string) ([]rule.ReactionRule, error) 
 
 	return foundRules, nil
 }
+
+func (p *Postgresql) CreateRanks(r []ranks.Rank) ([]ranks.Rank, error)
+func (p *Postgresql) ReadRanks(gId string) ([]ranks.Rank, error)
+func (p *Postgresql) DeleteRank(gId string, rId string) error
+func (p *Postgresql) DeleteRanks(gId string) error
