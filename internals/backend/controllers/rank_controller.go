@@ -30,10 +30,12 @@ func NewRankController(rs services.IRankService, l logger.ILogger) *RankControll
 
 func (rc *RankController) RegisterRoutes(r *chi.Mux) {
 	r.Route("/rank", func(r chi.Router) {
-		r.Get("/{gID}", rc.getRanks)
 		r.With(middleware.ValidateJson[ranks.Ranks]()).Post("/", rc.postRanks)
-		r.Delete("/{gID}", rc.deleteRanks)
-		r.Delete("/{gID}/{rID}", rc.deleteRank)
+		r.Route("/{gID}", func(r chi.Router) {
+			r.Delete("/", rc.deleteRanks)
+			r.Get("/", rc.getRanks)
+			r.Delete("/{rID}", rc.deleteRank)
+		})
 	})
 }
 
@@ -136,5 +138,35 @@ func (rc *RankController) deleteRanks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rc *RankController) deleteRank(w http.ResponseWriter, r *http.Request) {
+	gID := chi.URLParam(r, "gID")
+	rID := chi.URLParam(r, "rID")
 
+	if gID == "" || rID == "" {
+		common.SendBadRequestError(w, "invalid request")
+		return
+	}
+
+	err := rc.rankService.DeleteRank(gID, rID)
+
+	switch {
+	case err == common.ErrNotFound:
+		common.SendNotFoundError(w, "guild id or rank id not found")
+		return
+	case err == common.ErrInternal:
+		common.SendInternalError(w, "internal error")
+		return
+	case err != nil:
+		rc.logger.Error(err, map[string]any{"details": "error while deleting rank"})
+		common.NewErrorResponseBuilder(err).SetStatus(http.StatusInternalServerError).SetMessage("internal error").Send(w)
+		return
+	}
+
+	okResp := common.OkResponse{
+		Message: "successfully deleted rank",
+	}
+
+	if err := common.MarshalBody(w, http.StatusOK, &okResp); err != nil {
+		rc.logger.Error(err, map[string]any{"details": "error while marshaling response in deleteRank"})
+		common.SendInternalError(w, err.Error())
+	}
 }
