@@ -38,7 +38,31 @@ func (rc *RankController) RegisterRoutes(r *chi.Mux) {
 }
 
 func (rc *RankController) getRanks(w http.ResponseWriter, r *http.Request) {
+	gID := chi.URLParam(r, "gID")
 
+	if gID == "" {
+		common.SendBadRequestError(w, "invalid request")
+		return
+	}
+
+	foundRanks, err := rc.rankService.GetRanks(gID)
+
+	switch {
+	case err == common.ErrNotFound:
+		common.SendNotFoundError(w, "guild id not found")
+		return
+	case err == common.ErrInternal:
+		common.SendInternalError(w, "internal error")
+		return
+	case err != nil:
+		common.NewErrorResponseBuilder(err).SetStatus(http.StatusInternalServerError).SetMessage("internal error").Send(w)
+		return
+	}
+
+	if err := common.MarshalBody(w, http.StatusOK, &foundRanks); err != nil {
+		rc.logger.Error(err, map[string]any{"details": "error while marshaling response in getRanks"})
+		common.SendInternalError(w, err.Error())
+	}
 }
 
 func (rc *RankController) postRanks(w http.ResponseWriter, r *http.Request) {
