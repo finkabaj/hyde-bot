@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	mogs "github.com/finkabaj/hyde-bot/internals/backend/mocks"
@@ -117,7 +116,7 @@ func TestCreateRanks(t *testing.T) {
 
 			assert.Equal(t, d.expectedStatus, rr.Code)
 
-			if reflect.DeepEqual(d.expectedError, common.ErrorResponse{}) {
+			if d.rawError == nil {
 				var aResp ranks.Ranks
 				common.UnmarshalBody(rr.Result().Body, &aResp)
 				assert.Equal(t, d.expected, aResp)
@@ -185,11 +184,9 @@ func TestGetRanks(t *testing.T) {
 			r.ServeHTTP(rr, req)
 			defer rr.Result().Body.Close()
 
-			fmt.Println(rr.Body.String())
-
 			assert.Equal(t, d.expectedStatus, rr.Code)
 
-			if reflect.DeepEqual(d.expectedError, common.ErrorResponse{}) {
+			if d.rawError == nil {
 				var aResp ranks.Ranks
 				common.UnmarshalBody(rr.Result().Body, &aResp)
 				assert.Equal(t, d.expectedRanks, aResp)
@@ -199,5 +196,84 @@ func TestGetRanks(t *testing.T) {
 				assert.Equal(t, d.expectedError, aResp)
 			}
 		})
+
+		mockRankService.AssertExpectations(t)
+	}
+}
+
+func TestDeleteRanks(t *testing.T) {
+	data := []struct {
+		name               string
+		inputGuildID       string
+		expectedOkResponse common.OkResponse
+		expectedStatus     int
+		expectedError      common.ErrorResponse
+		rawError           error
+	}{
+		{
+			name:               "Positive",
+			inputGuildID:       "1",
+			expectedOkResponse: common.OkResponse{Message: "successfully deleted ranks"},
+			expectedStatus:     http.StatusOK,
+			expectedError:      common.ErrorResponse{},
+			rawError:           nil,
+		},
+		{
+			name:               "NotFound",
+			inputGuildID:       "2",
+			expectedOkResponse: common.OkResponse{},
+			expectedStatus:     http.StatusNotFound,
+			expectedError:      *common.NewErrorResponseBuilder(common.ErrNotFound).SetStatus(http.StatusNotFound).SetMessage("guild id not found").Get(),
+			rawError:           common.ErrNotFound,
+		},
+		{
+			name:               "Internal",
+			inputGuildID:       "3",
+			expectedOkResponse: common.OkResponse{},
+			expectedStatus:     http.StatusInternalServerError,
+			expectedError:      *common.NewErrorResponseBuilder(common.ErrInternal).SetStatus(http.StatusInternalServerError).SetMessage("internal error").Get(),
+			rawError:           common.ErrInternal,
+		},
+		{
+			name:               "Unexpected",
+			inputGuildID:       "4",
+			expectedOkResponse: common.OkResponse{},
+			expectedStatus:     http.StatusInternalServerError,
+			expectedError:      *common.NewErrorResponseBuilder(errors.New("tnd")).SetStatus(http.StatusInternalServerError).SetMessage("internal error").Get(),
+			rawError:           errors.New("tnd"),
+		},
+		{
+			name:               "BadRequest",
+			inputGuildID:       "5",
+			expectedOkResponse: common.OkResponse{},
+			expectedStatus:     http.StatusBadRequest,
+			expectedError:      *common.NewErrorResponseBuilder(common.ErrBadRequest).SetStatus(http.StatusBadRequest).SetMessage("there is no ranks to delete").Get(),
+			rawError:           common.ErrBadRequest,
+		},
+	}
+
+	for _, d := range data {
+		t.Run(d.name, func(t *testing.T) {
+			mockRankService.On("DeleteRanks", d.inputGuildID).Return(d.rawError)
+
+			rr := httptest.NewRecorder()
+			req := httptest.NewRequest("DELETE", fmt.Sprintf("/rank/%s", d.inputGuildID), nil)
+			r.ServeHTTP(rr, req)
+			defer rr.Result().Body.Close()
+
+			assert.Equal(t, d.expectedStatus, rr.Code)
+
+			if d.rawError == nil {
+				var aResp common.OkResponse
+				common.UnmarshalBody(rr.Result().Body, &aResp)
+				assert.Equal(t, d.expectedOkResponse, aResp)
+			} else {
+				var aResp common.ErrorResponse
+				common.UnmarshalBody(rr.Result().Body, &aResp)
+				assert.Equal(t, d.expectedError, aResp)
+			}
+		})
+
+		mockRankService.AssertExpectations(t)
 	}
 }

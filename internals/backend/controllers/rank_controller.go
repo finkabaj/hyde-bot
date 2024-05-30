@@ -55,6 +55,7 @@ func (rc *RankController) getRanks(w http.ResponseWriter, r *http.Request) {
 		common.SendInternalError(w, "internal error")
 		return
 	case err != nil:
+		rc.logger.Error(err, map[string]any{"details": "error while getting ranks"})
 		common.NewErrorResponseBuilder(err).SetStatus(http.StatusInternalServerError).SetMessage("internal error").Send(w)
 		return
 	}
@@ -87,6 +88,7 @@ func (rc *RankController) postRanks(w http.ResponseWriter, r *http.Request) {
 		common.SendNotFoundError(w, "guild id or owner id not found")
 		return
 	case err != nil:
+		rc.logger.Error(err, map[string]any{"details": "error while creating ranks"})
 		common.NewErrorResponseBuilder(err).SetStatus(http.StatusInternalServerError).SetMessage("internal error").Send(w)
 		return
 	}
@@ -98,7 +100,39 @@ func (rc *RankController) postRanks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rc *RankController) deleteRanks(w http.ResponseWriter, r *http.Request) {
+	gID := chi.URLParam(r, "gID")
 
+	if gID == "" {
+		common.SendBadRequestError(w, "invalid request")
+		return
+	}
+
+	err := rc.rankService.DeleteRanks(gID)
+
+	switch {
+	case err == common.ErrNotFound:
+		common.SendNotFoundError(w, "guild id not found")
+		return
+	case err == common.ErrInternal:
+		common.SendInternalError(w, "internal error")
+		return
+	case err == common.ErrBadRequest:
+		common.SendBadRequestError(w, "there is no ranks to delete")
+		return
+	case err != nil:
+		rc.logger.Error(err, map[string]any{"details": "error while deleting ranks"})
+		common.NewErrorResponseBuilder(err).SetStatus(http.StatusInternalServerError).SetMessage("internal error").Send(w)
+		return
+	}
+
+	okResp := common.OkResponse{
+		Message: "successfully deleted ranks",
+	}
+
+	if err := common.MarshalBody(w, http.StatusOK, &okResp); err != nil {
+		rc.logger.Error(err, map[string]any{"details": "error while marshaling response in deleteRanks"})
+		common.SendInternalError(w, err.Error())
+	}
 }
 
 func (rc *RankController) deleteRank(w http.ResponseWriter, r *http.Request) {
